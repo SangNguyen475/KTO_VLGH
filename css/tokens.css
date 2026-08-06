@@ -1,0 +1,32 @@
+:root {
+  --color-surface: #fff9ed;
+  --color-surface-low: #fcf3d8;
+  --color-surface-high: #f1e8cd;
+  --color-surface-highest: #ebe2c8;
+  --color-ink: #1f1c0b;
+  --color-ink-muted: #5a403c;
+  --color-crimson: #610000;
+  --color-crimson-light: #8b0000;
+  --color-antique-gold: #735c00;
+  --color-gold-light: #fed65b;
+  --color-gold: #e9c349;
+  --color-jade: #00341b;
+  --color-jade-light: #004d2b;
+  --color-jade-bright: #81d9a1;
+  --color-outline: #8e706b;
+  --color-outline-soft: #e3beb8;
+  --color-purple: #60405f;
+  --color-paper-shadow: rgba(48, 29, 13, 0.24);
+  --font-display: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --font-body: "Segoe UI", "Noto Sans", Arial, sans-serif;
+  --font-number: Consolas, "Courier New", monospace;
+  --header-height: 72px;
+  --sidebar-width: 204px;
+  --quick-panel-width: 300px;
+  --bottom-nav-height: 68px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --shadow-paper: 0 10px 30px var(--color-paper-shadow);
+  --transition-fast: 160ms ease;
+  --transition-med: 280ms cubic-bezier(.2, .8, .2, 1);
+}

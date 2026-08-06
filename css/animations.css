@@ -1,0 +1,79 @@
+@keyframes hero-idle {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-3px) rotate(1deg); }
+}
+
+@keyframes aura-breathe {
+  0%, 100% { opacity: .55; transform: scale(.9); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+@keyframes node-ring {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes node-land {
+  0% { transform: translate(-50%, -50%) rotate(45deg) scale(1); }
+  35% { transform: translate(-50%, -50%) rotate(45deg) scale(1.28); }
+  68% { transform: translate(-50%, -50%) rotate(45deg) scale(.9); }
+  100% { transform: translate(-50%, -50%) rotate(45deg) scale(1); }
+}
+
+@keyframes trail-fade {
+  from { opacity: .78; transform: scale(1); }
+  to { opacity: 0; transform: translateY(16px) scale(2.4); }
+}
+
+@keyframes orb-awaken {
+  0% { transform: scale(.3); }
+  55% { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+
+@keyframes sword-qi {
+  from { transform: translateX(-70%); }
+  to { transform: translateX(70%); }
+}
+
+@keyframes warning-pulse {
+  50% { background: rgba(139, 0, 0, .12); }
+}
+
+@keyframes scroll-unroll {
+  from { opacity: 0; transform: scaleX(.14) scaleY(.85); }
+  70% { opacity: 1; transform: scaleX(1.03) scaleY(1); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes card-fly {
+  0% { opacity: 1; transform: translate3d(0, 0, 0) rotate(-8deg); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(var(--fly-x), var(--fly-y), 0) rotate(12deg) scale(.5); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+.effects-reduced .hero-sprite,
+.effects-reduced .hero-aura,
+.effects-reduced .node-ring,
+.effects-reduced .primary-cta::after {
+  animation: none !important;
+}
+
+.effects-reduced .motion-trail {
+  display: none;
+}
