@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#22170f">
-  <meta name="description" content="Vạn Lý Giang Hồ — hành trình khinh công qua mười sáu địa danh võ lâm.">
-  <title>Vạn Lý Giang Hồ</title>
-  <link rel="stylesheet" href="./css/tokens.css">
-  <link rel="stylesheet" href="./css/base.css">
-  <link rel="stylesheet" href="./css/layout.css">
-  <link rel="stylesheet" href="./css/components.css">
-  <link rel="stylesheet" href="./css/animations.css">
-  <link rel="stylesheet" href="./css/responsive.css">
+  <meta name="description" content="Vạn Lý Giang Hồ: Ngũ Nhạc Triều Tông — tích Sơn Thế, vượt Ngũ Nhạc và nhận đại thưởng.">
+  <title>Vạn Lý Giang Hồ: Ngũ Nhạc Triều Tông</title>
+  <link rel="stylesheet" href="./css/tokens.css?v=2">
+  <link rel="stylesheet" href="./css/base.css?v=2">
+  <link rel="stylesheet" href="./css/layout.css?v=2">
+  <link rel="stylesheet" href="./css/components.css?v=2">
+  <link rel="stylesheet" href="./css/animations.css?v=2">
+  <link rel="stylesheet" href="./css/responsive.css?v=2">
 </head>
 <body>
   <div class="app-shell" id="app">
@@ -19,28 +19,29 @@
       <span>Đang kết nối lại… Lượt hành trình của bạn vẫn được giữ nguyên.</span>
       <button class="text-button" id="retryConnection" type="button">Thử lại</button>
     </div>
+    <div class="phase-banner" id="phaseBanner" role="status" aria-live="polite" hidden></div>
 
     <header class="topbar">
-      <div class="brand-lockup" aria-label="Vạn Lý Giang Hồ">
-        <div class="brand-seal" aria-hidden="true">萬</div>
+      <div class="brand-lockup" aria-label="Vạn Lý Giang Hồ: Ngũ Nhạc Triều Tông">
+        <div class="brand-seal" aria-hidden="true">岳</div>
         <div class="brand-copy">
-          <strong>Vạn Lý Giang Hồ</strong>
-          <span>Du hiệp vạn lý</span>
+          <strong>Ngũ Nhạc Triều Tông</strong>
+          <span>Mỗi bước tụ sơn thế</span>
         </div>
       </div>
 
       <div class="countdown-stat" title="Thời gian sự kiện còn lại">
         <span class="stat-icon" aria-hidden="true">◷</span>
         <span>
-          <small>Sự kiện còn</small>
+          <small><span id="eventPhase">Đang đồng bộ thời gian</span> <em class="dev-clock-badge" id="devClockBadge" hidden>DEV</em></small>
           <strong id="countdown">-- ngày --:--:--</strong>
         </span>
       </div>
 
       <div class="round-progress">
         <div class="round-progress__meta">
-          <span>Vòng <strong id="roundValue">1</strong></span>
-          <span>Mốc kế: <strong id="nextMilestone">2 vòng</strong></span>
+          <span>Sơn Ấn <strong id="roundValue">0</strong></span>
+          <span>Mốc kế: <strong id="nextMilestone">2 Sơn Ấn</strong></span>
         </div>
         <div class="sword-progress" role="progressbar" aria-label="Tiến độ trong vòng" aria-valuemin="0" aria-valuemax="16">
           <span id="roundProgressFill"></span>
@@ -48,19 +49,19 @@
       </div>
 
       <div class="resource-group">
-        <div class="resource-plaque mobile-round-resource" title="Vòng hiện tại">
-          <small>Vòng</small>
-          <strong id="mobileRoundValue">V1</strong>
+        <div class="resource-plaque mobile-round-resource" title="Ngũ Nhạc Sơn Ấn">
+          <small>Sơn Ấn</small>
+          <strong id="mobileRoundValue">Ấ0</strong>
         </div>
-        <div class="resource-plaque" title="Thẻ dùng để thi triển thân pháp">
+        <div class="resource-plaque" title="Ngũ Nhạc Lệnh dùng cho một lượt hành trình">
           <span aria-hidden="true">令</span>
-          <small>Thẻ Bộ Pháp</small>
-          <strong id="cardCount">12</strong>
+          <small>Ngũ Nhạc Lệnh</small>
+          <strong id="cardCount">0</strong>
         </div>
-        <div class="resource-plaque qinggong-resource" title="Đủ ba Khinh Công Khí sẽ thi triển 4–6 bước">
-          <span aria-hidden="true">氣</span>
-          <small>Khinh Công Khí</small>
-          <div class="qi-orbs" id="qiOrbs" aria-label="Khinh Công Khí 0 trên 3">
+        <div class="resource-plaque qinggong-resource" title="Đủ ba tầng Sơn Thế, lượt kế tiếp chắc chắn đạt 4–6 bước">
+          <span aria-hidden="true">山</span>
+          <small>Sơn Thế</small>
+          <div class="qi-orbs" id="qiOrbs" aria-label="Sơn Thế 0 trên 3">
             <i></i><i></i><i></i>
           </div>
         </div>
@@ -73,7 +74,7 @@
     </header>
 
     <aside class="sidebar" id="sidebar" aria-label="Điều hướng chính">
-      <div class="sidebar-ornament" aria-hidden="true">江<br>湖</div>
+      <div class="sidebar-ornament" aria-hidden="true">五<br>岳</div>
       <nav class="primary-nav" id="desktopNav"></nav>
       <button class="collapse-button" id="collapseSidebar" type="button" aria-label="Thu gọn thanh điều hướng">
         <span aria-hidden="true">‹</span>
@@ -81,7 +82,7 @@
     </aside>
 
     <main class="main-content">
-      <section class="map-screen" id="mapScreen" aria-label="Bản đồ Giang Hồ">
+      <section class="map-screen" id="mapScreen" aria-label="Bản đồ hành trình Ngũ Nhạc">
         <div class="map-viewport" id="mapViewport">
           <div class="map-scene" id="mapScene">
             <img class="map-art" src="./assets/images/giang-ho-map.jpg" data-fallback="./assets/images/giang-ho-map.png" alt="" draggable="false">
@@ -91,9 +92,9 @@
               <path id="pathLine"></path>
             </svg>
             <div class="map-nodes" id="mapNodes"></div>
-            <div class="hero-marker" id="heroMarker" aria-label="Vị trí hiện tại của Thiếu Hiệp">
-              <span class="hero-flag">Hiệp</span>
-              <span class="hero-sprite" aria-hidden="true">侠</span>
+            <div class="hero-marker" id="heroMarker" aria-label="Vị trí hiện tại trên hành trình Ngũ Nhạc">
+              <span class="hero-flag">Lệnh</span>
+              <span class="hero-sprite" aria-hidden="true">山</span>
               <span class="hero-aura" aria-hidden="true"></span>
             </div>
           </div>
@@ -116,7 +117,7 @@
 
         <div class="movement-hud" id="movementHud" hidden>
           <div>
-            <small>Khinh công đang thi triển</small>
+            <small>Đạp Nhạc Tung Bộ đang thi triển</small>
             <strong>Còn <span id="stepsRemaining">0</span> bước</strong>
           </div>
           <button class="wood-button compact" id="speedMovement" type="button">Tăng tốc ×2</button>
@@ -124,12 +125,12 @@
         </div>
 
         <div class="primary-cta-wrap">
-          <span class="cta-cost">Tiêu hao <b>令 ×1</b> · Hiện có <b id="ctaCardCount">12</b></span>
-          <button class="primary-cta" id="movementButton" type="button" aria-label="Thi triển thân pháp, tiêu hao một Thẻ Bộ Pháp">
-            <span class="cta-sword" aria-hidden="true">〆</span>
+          <span class="cta-cost">Tiêu hao <b>令 ×1</b> · Hiện có <b id="ctaCardCount">0</b></span>
+          <button class="primary-cta" id="movementButton" type="button" aria-label="Thi triển Đạp Nhạc Tung Bộ, tiêu hao một Ngũ Nhạc Lệnh">
+            <span class="cta-sword" aria-hidden="true">山</span>
             <span>
-              <small>Vận khí · Hành hiệp</small>
-              <strong>Thi Triển Thân Pháp</strong>
+              <small id="movementHint">Tả Lăng Tung phát lệnh</small>
+              <strong id="movementLabel">Thi triển Đạp Nhạc Tung Bộ</strong>
             </span>
           </button>
         </div>
@@ -138,7 +139,7 @@
       <aside class="quick-panel" id="quickPanel" aria-label="Nhiệm vụ nhanh">
         <div class="panel-heading">
           <div>
-            <small>Giang hồ sự vụ</small>
+            <small>Hiệu triệu Ngũ Nhạc</small>
             <h2>Nhiệm Vụ Nhanh</h2>
           </div>
           <button class="icon-button" id="collapseQuickPanel" type="button" aria-label="Thu gọn nhiệm vụ nhanh">›</button>
@@ -153,7 +154,7 @@
     <section class="content-panel" id="contentPanel" aria-hidden="true">
       <div class="content-panel__header">
         <div>
-          <small id="panelEyebrow">Vạn Lý Hành Trình</small>
+          <small id="panelEyebrow">Ngũ Nhạc Hành Trình</small>
           <h1 id="panelTitle">Nhiệm Vụ</h1>
         </div>
         <button class="seal-close" id="closePanel" type="button" aria-label="Đóng bảng nội dung">×</button>
@@ -166,6 +167,6 @@
     <div class="modal-layer" id="modalLayer" aria-live="polite"></div>
   </div>
 
-  <script type="module" src="./js/app.js"></script>
+  <script type="module" src="./js/app.js?v=2"></script>
 </body>
 </html>

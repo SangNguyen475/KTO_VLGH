@@ -13,7 +13,7 @@ body {
 
 body {
   color: var(--color-ink);
-  background: #21160f;
+  background: #1d2117;
   font-family: var(--font-body);
   -webkit-tap-highlight-color: transparent;
 }
@@ -81,8 +81,8 @@ small {
   height: 100%;
   overflow: hidden;
   background:
-    radial-gradient(circle at 20% 10%, rgba(255, 234, 165, .22), transparent 24%),
-    #21160f;
+    radial-gradient(circle at 20% 10%, rgba(213, 181, 95, .2), transparent 24%),
+    #1d2117;
 }
 
 .app-shell::before {

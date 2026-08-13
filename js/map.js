@@ -1,4 +1,4 @@
-import { mapNodes, nodeTypes } from "./mock-data.js";
+import { mapNodes, nodeTypes, rewardSummary } from "./event-config.js";
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -60,7 +60,7 @@ export class MapController {
       button.dataset.type = node.type;
       button.style.left = `${node.x}%`;
       button.style.top = `${node.y}%`;
-      button.setAttribute("aria-label", `${node.id}. ${node.name}, ${nodeTypes[node.type]}, thưởng ${node.reward.name} ×${node.reward.quantity}`);
+      button.setAttribute("aria-label", `${node.id}. ${node.name}, ${nodeTypes[node.type]}, thưởng ${rewardSummary(node.reward)}`);
 
       const ring = document.createElement("span");
       ring.className = "node-ring";
@@ -82,7 +82,7 @@ export class MapController {
       const name = document.createElement("span");
       name.textContent = node.name;
       const reward = document.createElement("small");
-      reward.textContent = `Phần thưởng: ${node.reward.name} ×${node.reward.quantity}`;
+      reward.textContent = `Phần thưởng: ${rewardSummary(node.reward)}`;
       tooltip.append(type, name, reward);
       button.append(ring, core, number, label, tooltip);
 

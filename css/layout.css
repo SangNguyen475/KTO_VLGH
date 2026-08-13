@@ -98,13 +98,15 @@
 .map-art {
   object-fit: cover;
   pointer-events: none;
+  filter: sepia(.18) saturate(.82) hue-rotate(32deg) contrast(1.04);
 }
 
 .map-ink-vignette {
   pointer-events: none;
   background:
     linear-gradient(180deg, rgba(25, 17, 9, .13), transparent 18%, transparent 80%, rgba(27, 16, 8, .18)),
-    radial-gradient(ellipse at center, transparent 52%, rgba(23, 16, 10, .34));
+    radial-gradient(ellipse at center, transparent 48%, rgba(29, 39, 22, .42)),
+    linear-gradient(115deg, rgba(72, 85, 44, .18), transparent 45%, rgba(112, 73, 28, .2));
   mix-blend-mode: multiply;
 }
 
@@ -184,6 +186,10 @@
   opacity: 1;
   pointer-events: auto;
   transform: none;
+}
+
+.content-panel.panel-settings {
+  bottom: 94px;
 }
 
 .content-panel__header {

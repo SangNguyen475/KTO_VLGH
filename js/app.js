@@ -1,19 +1,18 @@
-import { mapNodes, milestones, rules } from "./mock-data.js";
+import { EVENT_CONFIG, TERMS, milestoneRewardSummary, milestones, rules } from "./event-config.js";
+import { countdownRemaining, formatCountdownDuration, isEligible, milestoneStatus } from "./game-rules.js";
 import { store } from "./state.js";
 import { MapController } from "./map.js";
 import { createModalManager } from "./modals.js";
 import { MovementEngine } from "./movement.js";
-import {
-  claimQuest,
-  flyCardToCounter,
-  renderQuestPanel,
-  renderQuickQuests
-} from "./quests.js";
+import { renderQuestPanel, renderQuickQuests } from "./quests.js";
 import {
   renderFriendsPanel,
+  renderInventoryPanel,
   renderJourneyPanel,
+  renderLedgerPanel,
   renderRechargePanel
 } from "./rewards.js";
+import { renderOperationsPanel } from "./operations.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 
@@ -30,38 +29,47 @@ const refs = {
   panelTitle: $("#panelTitle"),
   panelEyebrow: $("#panelEyebrow"),
   panelBody: $("#panelBody"),
-  cardCount: $("#cardCount"),
-  ctaCardCount: $("#ctaCardCount"),
-  roundValue: $("#roundValue"),
+  tokenCount: $("#cardCount"),
+  ctaTokenCount: $("#ctaCardCount"),
+  sealValue: $("#roundValue"),
+  eventPhase: $("#eventPhase"),
+  devClockBadge: $("#devClockBadge"),
   countdown: $("#countdown"),
   nextMilestone: $("#nextMilestone"),
   progressFill: $("#roundProgressFill"),
-  qiOrbs: $("#qiOrbs"),
+  pityOrbs: $("#qiOrbs"),
   movementButton: $("#movementButton"),
+  movementLabel: $("#movementLabel"),
+  movementHint: $("#movementHint"),
   movementHud: $("#movementHud"),
   stepsRemaining: $("#stepsRemaining"),
   connectionBanner: $("#connectionBanner"),
+  phaseBanner: $("#phaseBanner"),
   toastRegion: $("#toastRegion"),
   soundToggle: $("#soundToggle")
 };
 
 const navItems = [
-  { id: "map", label: "Giang Hồ", icon: "山" },
+  { id: "map", label: "Ngũ Nhạc", icon: "山" },
   { id: "quests", label: "Nhiệm Vụ", icon: "令" },
-  { id: "journey", label: "Hành Trình", icon: "卷" },
+  { id: "journey", label: "Sơn Ấn", icon: "印" },
+  { id: "inventory", label: "Hành Trang", icon: "囊" },
   { id: "friends", label: "Bằng Hữu", icon: "盟" },
   { id: "recharge", label: "Tích Nạp", icon: "寶" },
+  { id: "ledger", label: "Lịch Sử", icon: "簿" },
   { id: "rules", label: "Thể Lệ", icon: "律" }
 ];
 
 const panelMeta = {
-  quests: ["Giang Hồ Sự Vụ", "Nhiệm Vụ"],
-  journey: ["Vạn Lý Hành Trình", "Mốc Hành Trình"],
+  quests: ["Hiệu Triệu Ngũ Nhạc", "Nhiệm Vụ Nhận Lệnh"],
+  journey: ["Ngũ Nhạc Sơn Ấn", "Mốc Tuần Nhạc"],
+  inventory: ["Cơ Duyên Đã Nhận", "Hành Trang"],
   friends: ["Kết Nghĩa Đồng Hành", "Bằng Hữu"],
-  recharge: ["Con Đường Tài Phú", "Tích Nạp"],
+  recharge: ["Stretch Progression", "Tích Nạp Demo"],
+  ledger: ["Giao Dịch Idempotent", "Lịch Sử Ngũ Nhạc Lệnh"],
   rules: ["Bí Điển Sự Kiện", "Thể Lệ"],
-  settings: ["Điều Chỉnh Khí Vận", "Cài Đặt"],
-  more: ["Hành Trang Du Hiệp", "Thêm"]
+  settings: ["Thiết Lập & Vận Hành", "Cài Đặt"],
+  more: ["Tiện Ích Hành Trình", "Thêm"]
 };
 
 let activePanel = "map";
@@ -75,41 +83,27 @@ function createNavButton(item, mobile = false) {
   button.type = "button";
   button.dataset.panel = item.id;
   button.setAttribute("aria-label", item.label);
-  const icon = document.createElement("span");
-  icon.className = "nav-icon";
-  icon.textContent = item.icon;
-  const label = document.createElement("span");
-  label.className = "nav-label";
-  label.textContent = item.label;
-  button.append(icon, label);
-  button.addEventListener("click", () => {
-    if (item.id === "map") closePanel();
-    else openPanel(item.id);
-  });
+  button.innerHTML = `<span class="nav-icon">${item.icon}</span><span class="nav-label">${item.label}</span>`;
+  button.addEventListener("click", () => item.id === "map" ? closePanel() : openPanel(item.id));
   if (mobile) button.dataset.mobile = "true";
   return button;
 }
 
 function renderNavigation() {
   refs.desktopNav.replaceChildren(...navItems.map((item) => createNavButton(item)));
-  const mobileItems = [
-    navItems[0],
-    navItems[1],
-    navItems[2],
-    navItems[3],
-    { id: "more", label: "Thêm", icon: "⋯" }
-  ];
+  const mobileItems = [navItems[0], navItems[1], navItems[2], navItems[3], { id: "more", label: "Thêm", icon: "⋯" }];
   refs.mobileNav.replaceChildren(...mobileItems.map((item) => createNavButton(item, true)));
 }
 
 function syncNavigation() {
   document.querySelectorAll(".nav-button").forEach((button) => {
-    button.classList.toggle("active", button.dataset.panel === activePanel);
-    button.setAttribute("aria-current", button.dataset.panel === activePanel ? "page" : "false");
+    const active = button.dataset.panel === activePanel;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-current", active ? "page" : "false");
   });
 }
 
-function toast(message, duration = 2800) {
+function toast(message, duration = 3000) {
   const item = document.createElement("div");
   item.className = "toast";
   item.textContent = message;
@@ -123,22 +117,15 @@ function playSound(type = "click") {
     audioContext ||= new AudioContext();
     const oscillator = audioContext.createOscillator();
     const gain = audioContext.createGain();
-    const frequencies = {
-      click: 330,
-      draw: 520,
-      move: 410,
-      land: 210,
-      reward: 660,
-      round: 760
-    };
-    oscillator.frequency.value = frequencies[type] || 330;
+    const frequencies = { click: 280, draw: 440, move: 180, land: 120, reward: 620, round: 760 };
+    oscillator.frequency.value = frequencies[type] || 280;
     oscillator.type = type === "round" ? "triangle" : "sine";
     gain.gain.setValueAtTime(.0001, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(.08, audioContext.currentTime + .015);
-    gain.gain.exponentialRampToValueAtTime(.0001, audioContext.currentTime + .13);
+    gain.gain.exponentialRampToValueAtTime(.075, audioContext.currentTime + .015);
+    gain.gain.exponentialRampToValueAtTime(.0001, audioContext.currentTime + .14);
     oscillator.connect(gain).connect(audioContext.destination);
     oscillator.start();
-    oscillator.stop(audioContext.currentTime + .14);
+    oscillator.stop(audioContext.currentTime + .15);
   } catch (error) {
     console.warn("Không thể phát âm thanh placeholder.", error);
   }
@@ -154,26 +141,20 @@ const map = new MapController({
   store
 });
 
-function renderQuickPanel(state) {
-  renderQuickQuests(refs.quickQuestList, state, {
-    onClaim: (quest, button) => {
-      if (claimQuest(quest, store)) {
-        toast(`Nhận ${quest.cards} Thẻ Bộ Pháp từ ${quest.name}.`);
-        flyCardToCounter(button, refs.cardCount);
-        playSound("reward");
-      }
-    },
-    onGo: (quest) => toast(`Đã đánh dấu nhiệm vụ “${quest.name}” trong game chính.`)
+function renderQuickPanel() {
+  renderQuickQuests(refs.quickQuestList, store, {
+    tokenCounter: refs.tokenCount,
+    toast,
+    playReward: () => playSound("reward"),
+    onGo: (quest) => toast(`Đã đánh dấu “${quest.name}” trong game chính.`)
   });
-
-  const next = milestones.find((milestone) => milestone.rounds >= state.currentRound && !state.claimedMilestones.includes(milestone.rounds));
+  const state = store.get();
+  const next = milestones.find((milestone) => milestoneStatus(milestone, state) !== "claimed" && state.completedRounds < milestone.rounds);
   refs.quickMilestone.replaceChildren();
   const label = document.createElement("small");
-  label.textContent = "Mốc thưởng sắp tới";
+  label.textContent = "Mốc Sơn Ấn sắp tới";
   const title = document.createElement("strong");
-  title.textContent = next
-    ? `${next.rounds} vòng · ${next.rewards.map((reward) => reward.name).join(" + ")}`
-    : "Đã hoàn thành toàn bộ mốc";
+  title.textContent = next ? `${next.rounds} Sơn Ấn · ${milestoneRewardSummary(next)}` : "Đã mở toàn bộ mốc";
   refs.quickMilestone.append(label, title);
 }
 
@@ -204,10 +185,7 @@ function renderRulesPanel() {
     heading.tabIndex = 0;
     heading.addEventListener("click", () => section.classList.toggle("open"));
     heading.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        section.classList.toggle("open");
-      }
+      if (event.key === "Enter" || event.key === " ") section.classList.toggle("open");
     });
     const paragraph = document.createElement("p");
     paragraph.textContent = content;
@@ -222,38 +200,24 @@ function renderMorePanel() {
   refs.panelBody.replaceChildren();
   const grid = document.createElement("div");
   grid.className = "settings-grid";
-  [
-    ["Tích Nạp", "寶", "recharge"],
-    ["Thể Lệ", "律", "rules"],
-    ["Cài đặt hiệu ứng", "⚙", "settings"]
-  ].forEach(([label, icon, panel]) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "setting-card";
-    const glyph = document.createElement("span");
-    glyph.className = "quest-icon";
-    glyph.style.margin = "0 auto 10px";
-    glyph.textContent = icon;
-    const title = document.createElement("strong");
-    title.textContent = label;
-    button.append(glyph, title);
-    button.addEventListener("click", () => openPanel(panel));
-    grid.append(button);
+  [["Hành Trang", "囊", "inventory"], ["Bằng Hữu", "盟", "friends"], ["Tích Nạp", "寶", "recharge"], ["Lịch Sử Lệnh", "簿", "ledger"], ["Thể Lệ", "律", "rules"], ["Cài đặt & DEV", "⚙", "settings"]].forEach(([label, icon, panel]) => {
+    const action = document.createElement("button");
+    action.type = "button";
+    action.className = "setting-card";
+    action.innerHTML = `<span class="quest-icon">${icon}</span><strong>${label}</strong>`;
+    action.addEventListener("click", () => openPanel(panel));
+    grid.append(action);
   });
   refs.panelBody.append(grid);
 }
 
 function renderSettingsPanel() {
   refs.panelBody.replaceChildren();
-  const grid = document.createElement("div");
-  grid.className = "settings-grid";
-
-  const effectCard = document.createElement("section");
-  effectCard.className = "setting-card";
-  const effectTitle = document.createElement("h3");
-  effectTitle.textContent = "Hiệu ứng hình ảnh";
-  const effectText = document.createElement("p");
-  effectText.textContent = "Giảm tàn ảnh, khí quang và chuyển động camera trên thiết bị yếu.";
+  const settings = document.createElement("div");
+  settings.className = "settings-grid settings-grid--compact";
+  const effect = document.createElement("section");
+  effect.className = "setting-card";
+  effect.innerHTML = `<h3>Hiệu ứng hình ảnh</h3><p>Giảm particle, vệt di chuyển và animation cục bộ trên thiết bị yếu. Khung nhìn luôn được giữ cố định.</p>`;
   const effectButton = document.createElement("button");
   effectButton.type = "button";
   effectButton.className = "wood-button";
@@ -262,59 +226,40 @@ function renderSettingsPanel() {
     store.update({ reducedEffects: !store.get().reducedEffects });
     renderSettingsPanel();
   });
-  effectCard.append(effectTitle, effectText, effectButton);
-
-  const networkCard = document.createElement("section");
-  networkCard.className = "setting-card";
-  const networkTitle = document.createElement("h3");
-  networkTitle.textContent = "Trạng thái kết nối demo";
-  const networkText = document.createElement("p");
-  networkText.textContent = "Mô phỏng mất kết nối để kiểm tra việc không trừ Thẻ và không random lại.";
-  const networkButton = document.createElement("button");
-  networkButton.type = "button";
-  networkButton.className = "wood-button";
-  networkButton.textContent = store.get().offline ? "Kết nối lại" : "Mô phỏng offline";
-  networkButton.addEventListener("click", () => {
-    store.update({ offline: !store.get().offline });
-    renderSettingsPanel();
-  });
-  networkCard.append(networkTitle, networkText, networkButton);
-
-  const resetCard = document.createElement("section");
-  resetCard.className = "setting-card";
-  const resetTitle = document.createElement("h3");
-  resetTitle.textContent = "Dữ liệu phát triển";
-  const resetText = document.createElement("p");
-  resetText.textContent = "Xóa toàn bộ tiến độ localStorage và đưa event về trạng thái ban đầu.";
+  effect.append(effectButton);
+  const reset = document.createElement("section");
+  reset.className = "setting-card";
+  reset.innerHTML = "<h3>Dữ liệu local</h3><p>Reset toàn bộ tiến độ, ledger, queue và telemetry của demo.</p>";
   const resetButton = document.createElement("button");
   resetButton.type = "button";
   resetButton.className = "seal-button";
   resetButton.textContent = "Reset dữ liệu demo";
   resetButton.addEventListener("click", async () => {
-    const confirmed = await modals.confirm({
-      title: "Xóa Dấu Chân Giang Hồ?",
-      message: "Toàn bộ tiến độ, vật phẩm và mốc đã nhận trên thiết bị này sẽ bị xóa.",
-      confirmLabel: "Reset Dữ Liệu"
-    });
+    const confirmed = await modals.confirm({ title: "Xóa Ngũ Nhạc Sơn Ấn?", message: "Toàn bộ tiến độ local sẽ được khởi tạo lại.", confirmLabel: "Reset Dữ Liệu" });
     if (confirmed) {
       store.reset();
       map.syncState(store.get());
-      map.focusNode(1);
-      closePanel();
       toast("Đã khởi tạo lại hành trình.");
+      renderSettingsPanel();
     }
   });
-  resetCard.append(resetTitle, resetText, resetButton);
-  grid.append(effectCard, networkCard, resetCard);
-  refs.panelBody.append(grid);
+  reset.append(resetButton);
+  settings.append(effect, reset);
+  const dev = document.createElement("details");
+  dev.className = "dev-shell";
+  if (new URLSearchParams(location.search).get("dev") === "1") dev.open = true;
+  const summary = document.createElement("summary");
+  summary.textContent = "Điều khiển demo / DEV";
+  const body = document.createElement("div");
+  body.className = "dev-body";
+  renderOperationsPanel(body, store, { toast, onResume: () => movement.start() });
+  dev.append(summary, body);
+  refs.panelBody.append(settings, dev);
 }
 
 function openPanel(panelId) {
-  if (store.get().animationPlaying && panelId !== "settings") {
-    toast("Hãy hoàn tất lượt khinh công hiện tại.");
-    return;
-  }
   activePanel = panelId;
+  refs.panel.classList.toggle("panel-settings", panelId === "settings");
   const [eyebrow, title] = panelMeta[panelId] || panelMeta.more;
   refs.panelEyebrow.textContent = eyebrow;
   refs.panelTitle.textContent = title;
@@ -322,16 +267,13 @@ function openPanel(panelId) {
   refs.panel.setAttribute("aria-hidden", "false");
   refs.panelBody.scrollTop = 0;
   syncNavigation();
-
-  const handlers = {
-    toast,
-    cardCounter: refs.cardCount,
-    onGo: (quest) => toast(`Đã đánh dấu nhiệm vụ “${quest.name}” trong game chính.`)
-  };
+  const handlers = { toast, tokenCounter: refs.tokenCount, modals, playSound, onGo: (quest) => toast(`Đã đánh dấu “${quest.name}” trong game chính.`) };
   if (panelId === "quests") renderQuestPanel(refs.panelBody, store, handlers);
   else if (panelId === "journey") renderJourneyPanel(refs.panelBody, store, handlers);
+  else if (panelId === "inventory") renderInventoryPanel(refs.panelBody, store);
   else if (panelId === "friends") renderFriendsPanel(refs.panelBody, store, handlers);
   else if (panelId === "recharge") renderRechargePanel(refs.panelBody, store, handlers);
+  else if (panelId === "ledger") renderLedgerPanel(refs.panelBody, store);
   else if (panelId === "rules") renderRulesPanel();
   else if (panelId === "settings") renderSettingsPanel();
   else renderMorePanel();
@@ -339,6 +281,7 @@ function openPanel(panelId) {
 
 function closePanel() {
   activePanel = "map";
+  refs.panel.classList.remove("panel-settings");
   refs.panel.classList.remove("open");
   refs.panel.setAttribute("aria-hidden", "true");
   syncNavigation();
@@ -355,48 +298,89 @@ const movement = new MovementEngine({
   skipButton: $("#skipMovement"),
   toast,
   openQuests: () => openPanel("quests"),
-  playSound
+  playSound,
+  onSettled: () => renderState(store.get())
 });
 
+function renderPhaseBanner(state, eventStatus) {
+  refs.phaseBanner.hidden = true;
+  refs.phaseBanner.className = "phase-banner";
+  if (!isEligible(state.playerLevel)) {
+    refs.phaseBanner.textContent = `Nhân vật Lv${state.playerLevel}: cần đạt Lv20 để tham gia.`;
+    refs.phaseBanner.classList.add("warning");
+    refs.phaseBanner.hidden = false;
+  } else if (eventStatus.phase === "settlement") {
+    refs.phaseBanner.textContent = "Ngày 10: Không phát sinh Lệnh mới. Hãy dùng Lệnh còn lại và nhận thưởng trước khi event kết thúc.";
+    refs.phaseBanner.classList.add("settlement");
+    refs.phaseBanner.hidden = false;
+  } else if (eventStatus.phase === "ended") {
+    refs.phaseBanner.textContent = "Sự kiện đã kết thúc. Tiến độ và lịch sử chỉ còn chế độ xem.";
+    refs.phaseBanner.classList.add("ended");
+    refs.phaseBanner.hidden = false;
+  }
+}
+
 function renderState(state) {
-  refs.cardCount.textContent = state.movementCards;
-  refs.ctaCardCount.textContent = state.movementCards;
-  refs.roundValue.textContent = state.currentRound;
-  $("#mobileRoundValue").textContent = `V${state.currentRound}`;
+  const eventStatus = store.getEventStatus();
+  refs.tokenCount.textContent = state.movementTokens;
+  refs.ctaTokenCount.textContent = state.movementTokens;
+  refs.sealValue.textContent = state.completedRounds;
+  $("#mobileRoundValue").textContent = `Ấ${state.completedRounds}`;
   refs.progressFill.style.width = `${state.currentPosition / 16 * 100}%`;
   refs.progressFill.parentElement.setAttribute("aria-valuenow", String(state.currentPosition));
-  const next = milestones.find((item) => item.rounds >= state.currentRound && !state.claimedMilestones.includes(item.rounds));
-  refs.nextMilestone.textContent = next ? `${next.rounds} vòng` : "Viên mãn";
-  [...refs.qiOrbs.children].forEach((orb, index) => orb.classList.toggle("active", index < state.qinggongEnergy));
-  refs.qiOrbs.setAttribute("aria-label", `Khinh Công Khí ${state.qinggongEnergy} trên 3`);
-  refs.movementButton.disabled = state.animationPlaying;
-  refs.movementButton.classList.toggle("qi-ready", state.qinggongEnergy >= 3);
+  const next = milestones.find((item) => state.completedRounds < item.rounds);
+  refs.nextMilestone.textContent = next ? `${next.rounds} Sơn Ấn` : "Viên mãn";
+  [...refs.pityOrbs.children].forEach((orb, index) => orb.classList.toggle("active", index < state.sonTheLayers));
+  refs.pityOrbs.classList.toggle("ready", state.sonTheReady);
+  refs.pityOrbs.setAttribute("aria-label", state.sonTheReady ? "Sơn Thế đã sẵn sàng, lượt kế tiếp đạt 4 đến 6" : `Sơn Thế ${state.sonTheLayers} trên 3`);
+
+  const eligible = isEligible(state.playerLevel);
+  const hasAction = Boolean(state.pendingAction);
+  refs.movementButton.disabled = state.offline || !navigator.onLine || !eventStatus.actionsOpen || !eligible;
+  refs.movementButton.classList.toggle("qi-ready", state.sonTheReady);
+  if (hasAction) {
+    refs.movementLabel.textContent = state.pendingAction.status === "rewards_pending" ? "Tiếp tục nhận thưởng" : "Tiếp tục lượt đang dở";
+    refs.movementHint.textContent = "Không trừ thêm Lệnh · không random lại";
+  } else {
+    refs.movementLabel.textContent = TERMS.action;
+    refs.movementHint.textContent = state.sonTheReady ? "Sơn Thế · đảm bảo 4–6 bước" : "Tả Lăng Tung phát lệnh";
+  }
   refs.app.classList.toggle("effects-reduced", state.reducedEffects);
+  refs.app.classList.toggle("son-the-ready", state.sonTheReady);
   refs.soundToggle.classList.toggle("is-on", state.soundEnabled);
   refs.soundToggle.textContent = state.soundEnabled ? "♫" : "♪";
   refs.connectionBanner.hidden = !state.offline && navigator.onLine;
+  renderPhaseBanner(state, eventStatus);
   map.syncState(state);
-  renderQuickPanel(state);
+  renderQuickPanel();
+  updateCountdown();
 }
 
 function updateCountdown() {
-  const remaining = Math.max(0, store.get().eventEndTime - Date.now());
-  const days = Math.floor(remaining / 86400000);
-  const hours = Math.floor(remaining % 86400000 / 3600000);
-  const minutes = Math.floor(remaining % 3600000 / 60000);
-  const seconds = Math.floor(remaining % 60000 / 1000);
-  refs.countdown.textContent = `${days} ngày ${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  refs.countdown.closest(".countdown-stat").classList.toggle("ending", remaining > 0 && remaining < 86400000);
-  if (remaining === 0) refs.movementButton.disabled = true;
+  const realNow = Date.now();
+  const status = store.syncClock(realNow);
+  const state = store.get();
+  const effectiveNow = store.getEffectiveNow(realNow);
+  refs.devClockBadge.hidden = state.clockMode !== "demo";
+  refs.eventPhase.textContent = status.phase === "scheduled"
+    ? "Bắt đầu sau"
+    : status.phase === "ended"
+      ? "Đã kết thúc"
+      : `Ngày ${status.eventDay}/${EVENT_CONFIG.durationDays} · Sự kiện còn`;
+  if (status.phase === "ended") {
+    refs.countdown.textContent = formatCountdownDuration(0);
+    refs.countdown.closest(".countdown-stat").classList.remove("ending");
+    return;
+  }
+  const remaining = countdownRemaining({ now: effectiveNow, startTime: state.eventStartTime, endTime: state.eventEndTime });
+  refs.countdown.textContent = formatCountdownDuration(remaining);
+  refs.countdown.closest(".countdown-stat").classList.toggle("ending", status.phase === "settlement");
 }
 
 function bindGlobalUI() {
-  document.querySelectorAll("img[data-fallback]").forEach((image) => {
-    image.addEventListener("error", () => {
-      if (image.src.endsWith(image.dataset.fallback)) return;
-      image.src = image.dataset.fallback;
-    }, { once: true });
-  });
+  document.querySelectorAll("img[data-fallback]").forEach((image) => image.addEventListener("error", () => {
+    if (!image.src.endsWith(image.dataset.fallback)) image.src = image.dataset.fallback;
+  }, { once: true }));
   $("#collapseSidebar").addEventListener("click", () => {
     refs.sidebar.classList.toggle("collapsed");
     setTimeout(() => map.resetView(false), 300);
@@ -436,6 +420,10 @@ function bindGlobalUI() {
     renderState(store.get());
     toast("Kết nối đã khôi phục.");
   });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) updateCountdown();
+  });
+  window.addEventListener("focus", updateCountdown);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && refs.panel.classList.contains("open") && !modals.current) closePanel();
   });
@@ -448,7 +436,10 @@ function init() {
   store.addEventListener("change", (event) => renderState(event.detail));
   renderState(store.get());
   updateCountdown();
-  countdownTimer = setInterval(updateCountdown, 1000);
+  if (!countdownTimer) countdownTimer = setInterval(updateCountdown, 1000);
+  const status = store.getEventStatus();
+  store.log("eligibility_checked", { level: store.get().playerLevel, eligible: isEligible(store.get().playerLevel), eventDay: status.eventDay });
+  if (store.get().pendingAction) toast("Có một lượt đang dở. Chọn “Tiếp tục lượt đang dở” để phục hồi.", 5000);
 }
 
 init();

@@ -1,11 +1,12 @@
-import { mapNodes, movementCards } from "./mock-data.js";
-import { resolveNodeReward } from "./rewards.js";
+import { movementForms } from "./event-config.js";
+import { buildMovementPath, isEligible, nextSonThe, resolveRoll } from "./game-rules.js";
+import { processPendingRewards } from "./rewards.js";
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const easeInOut = (t) => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
 export class MovementEngine {
-  constructor({ store, map, modals, hud, stepsLabel, speedButton, skipButton, toast, openQuests, playSound }) {
+  constructor({ store, map, modals, hud, stepsLabel, speedButton, skipButton, toast, openQuests, playSound, onSettled }) {
     this.store = store;
     this.map = map;
     this.modals = modals;
@@ -16,9 +17,11 @@ export class MovementEngine {
     this.toast = toast;
     this.openQuests = openQuests;
     this.playSound = playSound;
+    this.onSettled = onSettled;
     this.speedMultiplier = 1;
     this.skipRequested = false;
     this.lastTrailTime = 0;
+    this.running = false;
     this.speedButton.addEventListener("click", () => this.toggleSpeed());
     this.skipButton.addEventListener("click", () => {
       this.skipRequested = true;
@@ -31,90 +34,47 @@ export class MovementEngine {
     this.speedButton.textContent = this.speedMultiplier === 2 ? "Tốc độ thường" : "Tăng tốc ×2";
   }
 
-  drawSteps() {
-    const state = this.store.get();
-    if (state.qinggongEnergy >= 3) {
-      return 4 + Math.floor(Math.random() * 3);
-    }
-    return 1 + Math.floor(Math.random() * 6);
-  }
-
-  async showCardDraw(result) {
+  async showCardDraw(result, powered) {
     const content = document.createElement("div");
     const hint = document.createElement("p");
-    hint.style.textAlign = "center";
-    hint.textContent = "Sáu thức thân pháp xoay chuyển theo khí vận…";
+    hint.className = "modal-intro";
+    hint.textContent = powered ? "Sơn Thế đã viên mãn · chỉ xuất hiện kết quả 4-6." : "Sáu thức Đạp Nhạc đang tụ sơn thế…";
     const fan = document.createElement("div");
     fan.className = "draw-fan";
-    movementCards.forEach((card, index) => {
+    movementForms.forEach((form, index) => {
       const item = document.createElement("div");
       item.className = "movement-card";
-      item.dataset.steps = String(card.steps);
+      item.dataset.steps = String(form.steps);
       item.style.setProperty("--fan-angle", `${(index - 2.5) * 8}deg`);
       item.style.setProperty("--fan-y", `${Math.abs(index - 2.5) * 6}px`);
-      const glyph = document.createElement("span");
-      glyph.textContent = card.glyph;
-      const name = document.createElement("strong");
-      name.textContent = card.name;
-      const steps = document.createElement("small");
-      steps.textContent = `${card.steps} bước`;
-      item.append(glyph, name, steps);
+      item.innerHTML = `<span>${form.glyph}</span><strong>${form.name}</strong><small>${form.steps} bước</small>`;
+      if (powered && form.steps < 4) item.classList.add("unavailable");
       fan.append(item);
     });
     content.append(hint, fan);
-    this.modals.open({
-      title: "Rút Thẻ Bộ Pháp",
-      eyebrow: "Khí vận khai mở",
-      content,
-      closeable: false
-    });
+    this.modals.open({ title: "Đạp Nhạc Tung Bộ", eyebrow: powered ? "Sơn Thế bảo hiểm" : "Tả Lăng Tung phát lệnh", content, closeable: false });
     this.playSound("draw");
     const reduced = this.store.get().reducedEffects;
-    await wait(reduced ? 40 : 620);
+    await wait(reduced ? 30 : 560);
     fan.querySelectorAll(".movement-card").forEach((card) => {
       const selected = Number(card.dataset.steps) === result;
       card.classList.toggle("selected", selected);
       card.classList.toggle("dimmed", !selected);
     });
-    const selectedData = movementCards.find((card) => card.steps === result);
-    hint.textContent = `${selectedData.name} · Tiến ${result} bước`;
-    await wait(reduced ? 60 : 850);
-    this.modals.close("draw-complete");
-  }
-
-  buildTargets(startPosition, steps) {
-    const targets = [];
-    let current = startPosition;
-    for (let index = 0; index < steps; index += 1) {
-      current = current >= mapNodes.length ? 1 : current + 1;
-      targets.push(current);
-    }
-    return targets;
-  }
-
-  advanceState(target) {
-    const state = this.store.get();
-    const completedRound = target === 16;
-    let passedNodes;
-    if (target === 1) passedNodes = [1];
-    else passedNodes = [...new Set([...state.passedNodes, target])];
-    this.store.update({
-      currentPosition: target,
-      currentRound: completedRound ? state.currentRound + 1 : state.currentRound,
-      passedNodes
-    });
-    return completedRound;
+    const selected = movementForms.find((form) => form.steps === result);
+    hint.textContent = `${selected.name} · Tiến ${result} bước`;
+    await wait(reduced ? 50 : 760);
+    this.modals.close("roll-revealed");
   }
 
   animateSegment(fromId, toId) {
     const from = this.map.getNodePixel(fromId);
     const to = this.map.getNodePixel(toId);
     const distance = Math.hypot(to.x - from.x, to.y - from.y);
-    const arc = Math.max(30, Math.min(85, distance * .24));
-    const duration = (this.store.get().reducedEffects ? 60 : 360) / this.speedMultiplier;
+    const arc = Math.max(18, Math.min(60, distance * .18));
+    const duration = (this.store.get().reducedEffects ? 50 : 340) / this.speedMultiplier;
     this.map.focusPixel(to, !this.store.get().reducedEffects);
     this.playSound("move");
-
     return new Promise((resolve) => {
       const start = performance.now();
       const frame = (now) => {
@@ -123,13 +83,12 @@ export class MovementEngine {
         const x = from.x + (to.x - from.x) * t;
         const y = from.y + (to.y - from.y) * t - Math.sin(Math.PI * t) * arc;
         this.map.setHeroPixel(x, y);
-        if (now - this.lastTrailTime > 85 / this.speedMultiplier) {
+        if (now - this.lastTrailTime > 90 / this.speedMultiplier) {
           this.map.addTrail(x, y + 12);
           this.lastTrailTime = now;
         }
-        if (raw < 1 && !this.skipRequested) {
-          requestAnimationFrame(frame);
-        } else {
+        if (raw < 1 && !this.skipRequested) requestAnimationFrame(frame);
+        else {
           this.map.setHeroPixel(to.x, to.y);
           resolve();
         }
@@ -138,133 +97,121 @@ export class MovementEngine {
     });
   }
 
-  showRoundCompletion(roundNumber) {
-    return new Promise((resolve) => {
-      const { wrap, button } = (() => {
-        const node = document.createElement("div");
-        node.className = "reward-hero";
-        const glyph = document.createElement("div");
-        glyph.className = "reward-glyph";
-        glyph.textContent = "印";
-        const title = document.createElement("h3");
-        title.textContent = `Dấu Ấn Du Hiệp · Vòng ${roundNumber}`;
-        const text = document.createElement("p");
-        text.textContent = "Đỉnh Kiếm Tông lưu danh. Bước dư vẫn tiếp tục trên con đường vạn lý.";
-        const action = document.createElement("button");
-        action.type = "button";
-        action.className = "seal-button";
-        action.textContent = "Tiếp Tục Hành Trình";
-        node.append(glyph, title, text, action);
-        return { wrap: node, button: action };
-      })();
-      button.addEventListener("click", () => {
-        this.modals.close("round");
-        resolve();
+  async runCommittedAction() {
+    const action = this.store.get().pendingAction;
+    if (!action) return;
+    if (action.status === "rewards_pending") {
+      processPendingRewards({
+        store: this.store,
+        modals: this.modals,
+        toast: this.toast,
+        playSound: this.playSound,
+        actionId: action.actionId,
+        onQueueEmpty: this.onSettled
       });
-      this.modals.open({
-        title: "Hoàn Thành Vòng",
-        eyebrow: "Dấu Ấn Du Hiệp",
-        content: wrap,
-        closeable: false
-      });
-      this.playSound("round");
-    });
-  }
+      return;
+    }
 
-  async runTargets(targets) {
-    let from = this.store.get().currentPosition;
-    let roundsCompleted = 0;
+    if (action.status === "result_committed") {
+      await this.showCardDraw(action.result, action.powered);
+      this.store.update((draft) => {
+        if (draft.pendingAction?.actionId === action.actionId) draft.pendingAction.status = "moving";
+      });
+    } else {
+      this.toast(`Tiếp tục ${movementForms.find((form) => form.steps === action.result)?.name || "lượt đang dở"}; không trừ thêm Lệnh.`);
+    }
+
     this.hud.hidden = false;
-    for (let index = 0; index < targets.length; index += 1) {
-      const target = targets[index];
-      this.stepsLabel.textContent = String(targets.length - index);
+    let from = this.store.get().currentPosition;
+    const startIndex = this.store.get().pendingAction?.pathIndex || 0;
+    for (let index = startIndex; index < action.path.length; index += 1) {
+      const target = action.path[index];
+      this.stepsLabel.textContent = String(action.path.length - index);
       if (!this.skipRequested) await this.animateSegment(from, target);
-      const completed = this.advanceState(target);
-      if (completed) roundsCompleted += 1;
+      this.store.advanceActionStep(action.actionId, target, index + 1);
       this.map.syncState(this.store.get());
       this.map.markLanded(target);
       this.playSound("land");
       from = target;
-      if (!this.skipRequested) await wait((this.store.get().reducedEffects ? 20 : 80) / this.speedMultiplier);
+      if (!this.skipRequested) await wait((this.store.get().reducedEffects ? 20 : 75) / this.speedMultiplier);
     }
     this.hud.hidden = true;
     this.stepsLabel.textContent = "0";
     this.map.focusNode(this.store.get().currentPosition, true);
-    return roundsCompleted;
-  }
-
-  async runBonusStep() {
-    const current = this.store.get().currentPosition;
-    const target = current >= 16 ? 1 : current + 1;
-    this.toast("Tinh quang dẫn lối: tiến thêm 1 ô, không nhận thưởng ô phụ.");
-    this.skipRequested = false;
-    this.hud.hidden = false;
-    this.stepsLabel.textContent = "1";
-    await this.animateSegment(current, target);
-    this.advanceState(target);
-    this.map.syncState(this.store.get());
-    this.map.markLanded(target);
-    this.hud.hidden = true;
+    this.store.finalizeAction(action.actionId);
+    processPendingRewards({
+      store: this.store,
+      modals: this.modals,
+      toast: this.toast,
+      playSound: this.playSound,
+      actionId: action.actionId,
+      onQueueEmpty: this.onSettled
+    });
   }
 
   async start() {
-    const initial = this.store.get();
-    if (initial.animationPlaying) return;
-    if (initial.offline || !navigator.onLine) {
-      this.toast("Chưa có kết nối. Không trừ Thẻ và chưa tạo kết quả mới.");
+    if (this.running) return;
+    const state = this.store.get();
+    const eventStatus = this.store.getEventStatus();
+    if (state.offline || !navigator.onLine) {
+      this.toast("Chưa có kết nối. Không trừ Lệnh và không tạo kết quả mới.");
       return;
     }
-    if (Date.now() >= initial.eventEndTime) {
-      this.toast("Sự kiện đã kết thúc.");
+    if (state.pendingAction) {
+      this.store.log("movement_recovered", { actionId: state.pendingAction.actionId, status: state.pendingAction.status });
+      this.running = true;
+      try { await this.runCommittedAction(); } finally { this.running = false; }
       return;
     }
-    if (initial.movementCards <= 0) {
-      this.toast("Không đủ Thẻ Bộ Pháp. Hãy hoàn thành nhiệm vụ.");
+    if (!eventStatus.actionsOpen) {
+      this.toast(eventStatus.phase === "ended" ? "Sự kiện đã kết thúc." : "Sự kiện chưa bắt đầu.");
+      return;
+    }
+    if (!isEligible(state.playerLevel)) {
+      this.toast("Cần đạt Lv20 để tham gia Ngũ Nhạc Triều Tông.");
+      return;
+    }
+    if (state.movementTokens <= 0) {
+      this.toast("Không đủ Ngũ Nhạc Lệnh. Hãy hoàn thành nhiệm vụ.");
       this.openQuests();
       return;
     }
 
-    const result = this.drawSteps();
-    const powered = initial.qinggongEnergy >= 3;
-    const nextEnergy = powered ? 0 : result <= 2 ? Math.min(3, initial.qinggongEnergy + 1) : initial.qinggongEnergy;
-    this.store.update({
-      movementCards: initial.movementCards - 1,
-      qinggongEnergy: nextEnergy,
-      animationPlaying: true,
-      lastDraw: { steps: result, at: Date.now(), powered }
-    });
+    const roll = resolveRoll({ sonTheReady: state.sonTheReady, forcedResult: state.forcedRoll });
+    if (!roll.ok) {
+      this.toast(roll.error);
+      return;
+    }
+    const movement = buildMovementPath(state.currentPosition, roll.result);
+    const pity = nextSonThe({ layers: state.sonTheLayers, ready: state.sonTheReady }, roll.result, roll.powered);
+    const actionId = `action-${Date.now()}-${state.actionSequence + 1}`;
+    const action = {
+      actionId,
+      status: "result_committed",
+      eventDay: eventStatus.eventDay,
+      startPosition: state.currentPosition,
+      result: roll.result,
+      powered: roll.powered,
+      path: movement.path,
+      pathIndex: 0,
+      finalPosition: movement.finalPosition,
+      roundsCompleted: movement.roundsCompleted,
+      createdAt: new Date().toISOString()
+    };
+    if (!this.store.commitAction(action, pity)) return;
     this.skipRequested = false;
     this.speedMultiplier = 1;
     this.speedButton.textContent = "Tăng tốc ×2";
-
+    this.running = true;
     try {
-      await this.showCardDraw(result);
-      if (powered) this.toast("Khinh Công Khí viên mãn: thân pháp chỉ xuất hiện từ 4 đến 6 bước.");
-      else if (result <= 2) this.toast(`Khí châu cộng hưởng: ${nextEnergy}/3 Khinh Công Khí.`);
-
-      const targets = this.buildTargets(initial.currentPosition, result);
-      const roundsCompleted = await this.runTargets(targets);
-      for (let round = 0; round < roundsCompleted; round += 1) {
-        await this.showRoundCompletion(this.store.get().currentRound - roundsCompleted + round);
-      }
-
-      const finalNode = this.store.get().currentPosition;
-      await resolveNodeReward(finalNode, {
-        store: this.store,
-        modals: this.modals,
-        toast: this.toast
-      });
-
-      if (finalNode === 12) {
-        const bonus = Math.random() < .2;
-        if (bonus) await this.runBonusStep();
-        else this.toast("Tinh quang lắng xuống: chưa kích hoạt bước phụ.");
-      }
+      if (roll.powered) this.toast("Sơn Thế viên mãn: lượt bảo hiểm chỉ xuất hiện kết quả 4-6.");
+      else if (roll.result === 1 || roll.result === 2) this.toast(`Sơn Thế tích tụ: ${pity.layers}/3.`);
+      await this.runCommittedAction();
     } catch (error) {
-      console.error("Lỗi trong luồng thân pháp:", error);
-      this.toast("Khí mạch gián đoạn. Trạng thái hành trình đã được giữ lại.");
+      console.error("Lỗi trong luồng Đạp Nhạc:", error);
+      this.toast("Hành trình gián đoạn. Lượt đã được giữ để tiếp tục, không random lại.");
     } finally {
-      this.store.update({ animationPlaying: false });
+      this.running = false;
       this.hud.hidden = true;
       this.skipRequested = false;
     }

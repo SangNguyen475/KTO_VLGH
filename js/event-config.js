@@ -1,0 +1,221 @@
+export const EVENT_CONFIG = Object.freeze({
+  id: "ngu-nhac-trieu-tong-2026-v2",
+  name: "Vạn Lý Giang Hồ: Ngũ Nhạc Triều Tông",
+  shortName: "Ngũ Nhạc Triều Tông",
+  masterMessage: "Mỗi bước tụ sơn thế, Ngũ Nhạc cùng định giang hồ.",
+  timezone: "Asia/Ho_Chi_Minh",
+  durationDays: 10,
+  earningDays: 9,
+  minLevel: 20,
+  allowTokenGrantOnSettlementDay: false,
+  roundTokenCap: 2,
+  freeTokenCap: 70,
+  referralTokenCap: 9,
+  rechargeTokenCap: 30,
+  telemetryLimit: 180,
+  storageKey: "van-ly-giang-ho-ngu-nhac-v3",
+  previousStorageKey: "van-ly-giang-ho-ngu-nhac-v2"
+});
+
+export const TERMS = Object.freeze({
+  token: "Ngũ Nhạc Lệnh",
+  action: "Thi triển Đạp Nhạc Tung Bộ",
+  round: "Tuần Nhạc",
+  seal: "Ngũ Nhạc Sơn Ấn",
+  pity: "Sơn Thế",
+  bonusDay: "Ngày Trấn Nhạc",
+  finish: "Thắng Quán Phong"
+});
+
+export const nodeTypes = Object.freeze({
+  normal: "Cơ Duyên",
+  rare: "Kỳ Duyên",
+  legendary: "Thiên Duyên"
+});
+
+export const serverAgeRewardMultipliers = Object.freeze({
+  new: 0.8,
+  mature: 1,
+  legacy: 1.2
+});
+
+const scalableRewardNames = new Set(["Bạc", "Tu Vi", "Cống Hiến", "Cống Hiến Gia Tộc", "Chiến Công", "Nguyên Bảo khóa"]);
+
+const fixedReward = (name, quantity, group) => ({
+  kind: "fixed",
+  items: [{ name, quantity }],
+  group,
+  reviewStatus: "DEMO_PLACEHOLDER"
+});
+
+export const mapNodes = Object.freeze([
+  { id: 1, name: "Sơn Môn Tùng Sơn", x: 13, y: 82, type: "normal", icon: "嵩", reward: fixedReward("Bạc", 5000, "Bạc / Tu Vi") },
+  { id: 2, name: "Bắc Lộc Tùng Sơn", x: 25, y: 72, type: "normal", icon: "麓", reward: fixedReward("Tàng Bảo Đồ", 1, "Bạc / Tàng Bảo Đồ") },
+  { id: 3, name: "Tùng Sơn Kiếm Trận", x: 40, y: 81, type: "rare", icon: "陣", reward: fixedReward("Huyền Tinh Lv3", 1, "Huyền Tinh / Tinh Chú Thạch") },
+  { id: 4, name: "Trung Châu Cổ Đạo", x: 56, y: 72, type: "normal", icon: "道", reward: fixedReward("Tu Vi", 8000, "Tu Vi / Bạc") },
+  { id: 5, name: "Đỉnh Thái Sơn", x: 73, y: 82, type: "rare", icon: "泰", reward: fixedReward("Ngũ Hành Hồn Thạch", 1, "Ngũ Hành Hồn Thạch") },
+  { id: 6, name: "Nghĩa Quân Hội Sư", x: 84, y: 69, type: "normal", icon: "義", reward: fixedReward("Bạc", 10000, "Bạc / Tàng Bảo Đồ") },
+  { id: 7, name: "Đỉnh Hành Sơn", x: 73, y: 59, type: "rare", icon: "衡", reward: fixedReward("Cống Hiến", 100, "Huyền Tinh / Cống Hiến") },
+  {
+    id: 8,
+    name: "Ngũ Nhạc Minh Ước",
+    x: 86,
+    y: 47,
+    type: "legendary",
+    icon: "盟",
+    reward: {
+      kind: "choice",
+      group: "Rương tài nguyên tự chọn",
+      reviewStatus: "DEMO_PLACEHOLDER",
+      choices: [
+        { id: "wealth", name: "Rương Tài Phú", glyph: "財", items: [{ name: "Bạc", quantity: 25000 }] },
+        { id: "training", name: "Rương Tu Luyện", glyph: "煉", items: [{ name: "Tu Vi", quantity: 15000 }] },
+        { id: "alliance", name: "Rương Đồng Hành", glyph: "盟", items: [{ name: "Thiệp Đồng Hành", quantity: 1 }] }
+      ]
+    }
+  },
+  { id: 9, name: "Lãnh Địa Gia Tộc", x: 74, y: 37, type: "normal", icon: "族", reward: fixedReward("Cống Hiến", 100, "Cống Hiến") },
+  { id: 10, name: "Đỉnh Hằng Sơn", x: 87, y: 24, type: "rare", icon: "恆", reward: fixedReward("Tinh Chú Thạch", 1, "Tinh Chú Thạch / Hồn Thạch") },
+  { id: 11, name: "Tà Phái Phục Kích", x: 66, y: 20, type: "normal", icon: "伏", reward: fixedReward("Tu Vi", 10000, "Tu Vi / Bạc") },
+  { id: 12, name: "Chiến Trường Tống Kim", x: 52, y: 34, type: "normal", icon: "戰", reward: fixedReward("Bạc", 12000, "Bạc / Cống Hiến") },
+  { id: 13, name: "Đỉnh Hoa Sơn", x: 34, y: 24, type: "rare", icon: "華", reward: fixedReward("Thiệp Đồng Hành", 1, "Huyền Tinh / Thiệp Đồng Hành") },
+  { id: 14, name: "Trấn Loạn Trung Châu", x: 15, y: 32, type: "legendary", icon: "鎮", reward: fixedReward("Nguyên Bảo khóa", 20, "Nguyên Bảo khóa / quà hiếm") },
+  { id: 15, name: "Tung Dương Điện", x: 25, y: 48, type: "normal", icon: "殿", reward: fixedReward("Bạc", 12000, "Bạc / Tu Vi") },
+  { id: 16, name: "Thắng Quán Phong", x: 12, y: 63, type: "legendary", icon: "印", reward: fixedReward("Nguyên Bảo khóa", 50, "Nguyên Bảo khóa / quà hiếm") }
+]);
+
+export const movementForms = Object.freeze([
+  { steps: 1, name: "Nhất Bộ Khai Sơn", glyph: "壹" },
+  { steps: 2, name: "Nhị Bộ Vượt Lĩnh", glyph: "貳" },
+  { steps: 3, name: "Tam Bộ Trấn Nhạc", glyph: "參" },
+  { steps: 4, name: "Tứ Bộ Tụ Phong", glyph: "肆" },
+  { steps: 5, name: "Ngũ Bộ Hội Minh", glyph: "伍" },
+  { steps: 6, name: "Lục Bộ Triều Tông", glyph: "陸" }
+]);
+
+export const dailyQuests = Object.freeze([
+  { id: "login", icon: "日", name: "Đăng nhập game", description: "Đăng nhập Kiếm Thế Origin hôm nay.", target: 1, progressKey: "login" },
+  { id: "activity-80", icon: "活", name: "Đạt 80 Điểm Năng Động", description: "Hoàn thành daily loop và đạt 80 Điểm Năng Động.", target: 80, progressKey: "activity" },
+  { id: "nghia-quan", icon: "義", name: "Nhiệm Vụ Nghĩa Quân", description: "Hoàn thành Nhiệm Vụ Nghĩa Quân hôm nay.", target: 1, progressKey: "nghiaQuan" },
+  { id: "team", icon: "盟", name: "Hoạt động tổ đội", description: "Tham gia một hoạt động tổ đội.", target: 1, progressKey: "team" },
+  { id: "pvp", icon: "戰", name: "Tống Kim / Bang Hội", description: "Tham gia Tống Kim hoặc Bang Hội Khiêu Chiến.", target: 1, progressKey: "pvp" }
+].map((quest) => ({ ...quest, amount: 1, sourceType: "daily" })));
+
+export const cumulativeQuests = Object.freeze([
+  { id: "login-3", icon: "三", name: "Đăng nhập 3 ngày", description: "Duy trì hành trình trong 3 ngày.", progressKey: "loginDays", target: 3, amount: 2 },
+  { id: "login-5", icon: "五", name: "Đăng nhập 5 ngày", description: "Duy trì hành trình trong 5 ngày.", progressKey: "loginDays", target: 5, amount: 3 },
+  { id: "login-7", icon: "七", name: "Đăng nhập 7 ngày", description: "Duy trì hành trình trong 7 ngày.", progressKey: "loginDays", target: 7, amount: 5 },
+  { id: "nghia-quan-9", icon: "俠", name: "9 lần Nghĩa Quân", description: "Hoàn thành tổng 9 lần Nhiệm Vụ Nghĩa Quân.", progressKey: "nghiaQuanTotal", target: 9, amount: 3 }
+].map((quest) => ({ ...quest, sourceType: "cumulative" })));
+
+export const trấnNhạcRewards = Object.freeze([3, 6, 9].map((day) => ({
+  id: `tran-nhac-${day}`,
+  icon: "岳",
+  name: `Ngày ${day} · Trấn Nhạc`,
+  description: `Đăng nhập ngày ${day} để nhận hiệu triệu Ngũ Nhạc.`,
+  day,
+  amount: 3,
+  sourceType: "bonus-day"
+})));
+
+export const oneTimeQuest = Object.freeze({
+  id: "join-discord",
+  icon: "盟",
+  name: "Gia nhập Discord",
+  description: "Gia nhập Discord cộng đồng của Kiếm Thế Origin.",
+  target: 1,
+  amount: 1,
+  sourceType: "one-time"
+});
+
+export const milestones = Object.freeze([
+  { rounds: 2, role: "early", rewards: [{ name: "Bạc", quantity: 10000 }, { name: "Huyền Tinh Lv3", quantity: 2 }] },
+  { rounds: 5, role: "progression", rewards: [{ name: "Huyền Tinh Lv5", quantity: 1 }, { name: "Ngũ Hành Hồn Thạch", quantity: 3 }] },
+  { rounds: 8, role: "mid", rewards: [{ name: "Thiệp Chiêu Mộ Đồng Hành", quantity: 1 }] },
+  { rounds: 11, role: "retention", rewards: [{ name: "Mảnh Ngoại Trang Trấn Nhạc", quantity: 5 }] },
+  { rounds: 14, role: "core", featured: true, rewards: [{ name: "Rương Hành Trang Tự Chọn", quantity: 1 }, { name: "Tinh Chú Thạch-Trung", quantity: 1 }] },
+  {
+    rounds: 17,
+    role: "cosmetic",
+    featured: true,
+    cosmetic: true,
+    rewards: [],
+    choices: [
+      { id: "foot-effect", name: "Hiệu ứng chân Đạp Nhạc Tung Bộ", glyph: "步", items: [{ name: "Hiệu ứng chân Đạp Nhạc Tung Bộ", quantity: 1 }] },
+      { id: "back-cosmetic", name: "Ngoại trang lưng Sơn Hà Trấn Nhạc", glyph: "山", items: [{ name: "Ngoại trang lưng Sơn Hà Trấn Nhạc", quantity: 1 }] }
+    ]
+  },
+  {
+    rounds: 20,
+    role: "stretch",
+    featured: true,
+    rewards: [],
+    choices: [
+      { id: "title-ngu-nhac", name: "Danh hiệu Ngũ Nhạc Triều Tông", glyph: "岳", items: [{ name: "Danh hiệu Ngũ Nhạc Triều Tông", quantity: 1 }] },
+      { id: "title-tran-nhac", name: "Danh hiệu Trấn Nhạc Định Loạn", glyph: "鎮", items: [{ name: "Danh hiệu Trấn Nhạc Định Loạn", quantity: 1 }] }
+    ]
+  }
+]);
+
+export const referralProfiles = Object.freeze([
+  { id: "ref-1", name: "Mặc Phong", status: "claimable", amount: 3, detail: "NRU hợp lệ · Đã đạt Lv30" },
+  { id: "ref-2", name: "Tiểu Vũ", status: "progress", amount: 3, detail: "Reactivated · Đăng nhập 2/3 ngày" },
+  { id: "ref-3", name: "Tần Ca", status: "progress", amount: 3, detail: "NRU · Đang xác minh hoạt động" },
+  { id: "ref-invalid", name: "Hàn Giang", status: "invalid", amount: 0, detail: "Không hợp lệ · Phát hiện hành vi clone" }
+]);
+
+export const rechargeMilestones = Object.freeze([
+  { id: "recharge-100", amount: 100000, tokens: 2 },
+  { id: "recharge-300", amount: 300000, tokens: 4 },
+  { id: "recharge-500", amount: 500000, tokens: 7 },
+  { id: "recharge-1000", amount: 1000000, tokens: 17 }
+].map((item) => ({ ...item, reviewStatus: "PROPOSAL_CONFIRMED" })));
+
+export const rules = Object.freeze([
+  ["Thời gian", "Sự kiện kéo dài 10 ngày theo múi giờ Asia/Ho_Chi_Minh. Ngày 1-9 nhận Lệnh; ngày 10 chỉ tiêu Lệnh còn lại và nhận thưởng."],
+  ["Điều kiện", "Nhân vật đạt cấp 20 trở lên và tài khoản hợp lệ."],
+  ["Ngũ Nhạc Lệnh", "Mỗi lần thi triển tiêu hao 1 Lệnh. Lệnh miễn phí đến từ daily, tích lũy, Ngày Trấn Nhạc, Tuần Nhạc và nhiệm vụ một lần."],
+  ["Nguồn miễn phí", "Tối đa 70 Lệnh: 45 daily + 13 tích lũy + 9 Ngày Trấn Nhạc + 2 từ Tuần Nhạc + 1 từ Gia nhập Discord."],
+  ["Đạp Nhạc Tung Bộ", "Mỗi lượt nhận kết quả 1-6 và di chuyển tuần tự; chỉ ô dừng cuối cùng trả reward."],
+  ["Sơn Thế", "Kết quả 1 hoặc 2 cộng một tầng. Đủ 3 tầng, lượt kế tiếp chắc chắn đạt 4-6 rồi reset."],
+  ["Hoàn thành Tuần Nhạc", "Đi qua ô 16 Thắng Quán Phong sẽ tăng Sơn Ấn; bước dư tiếp tục từ ô 1. Ngày 1-9 được thêm 1 Lệnh/vòng, tối đa 2 Lệnh toàn event."],
+  ["Ngày cuối", "Ngày 10 không phát sinh Lệnh mới. Hãy dùng Lệnh còn lại và nhận thưởng trước khi event kết thúc."],
+  ["Bằng hữu", "Ba bằng hữu NRU/reactivated hợp lệ, mỗi hồ sơ 3 Lệnh; tổng tối đa 9. Hồ sơ clone không chiếm quota."],
+  ["Tích nạp", "Bốn mốc 100.000/300.000/500.000/1.000.000 VND cấp cộng dồn 2/4/7/17 Lệnh, tổng tối đa 30."],
+  ["Mốc Sơn Ấn", "Milestone mở theo số vòng thực tế tại 2/5/8/11/14/17/20 Sơn Ấn. Referral và tích nạp chỉ cấp Lệnh, không cấp thẳng milestone."],
+  ["Hết hạn", "Sau khi event kết thúc, không thể tạo lượt, di chuyển hoặc claim; lịch sử vẫn có thể xem."]
+]);
+
+export const inventorySeed = Object.freeze({
+  "Bạc": 0,
+  "Tu Vi": 0,
+  "Huyền Tinh Lv3": 0,
+  "Ngũ Hành Hồn Thạch": 0
+});
+
+export function rewardSummary(reward) {
+  if (!reward) return "Chưa cấu hình";
+  if (reward.kind === "choice") return reward.group;
+  return reward.items.map((item) => `${item.name} ×${item.quantity}`).join(" + ");
+}
+
+export function milestoneRewardSummary(milestone) {
+  if (milestone.choices?.length) return milestone.choices.map((choice) => choice.name).join(" hoặc ");
+  return milestone.rewards.map((item) => `${item.name} ×${item.quantity}`).join(" + ");
+}
+
+export function resolveRewardForTier(reward, tier = "mature") {
+  const multiplier = serverAgeRewardMultipliers[tier] || 1;
+  const scaleItems = (items) => items.map((item) => ({
+    ...item,
+    quantity: scalableRewardNames.has(item.name) ? Math.max(1, Math.round(item.quantity * multiplier)) : item.quantity
+  }));
+  if (reward.kind === "choice") {
+    return { ...reward, serverAgeTier: tier, choices: reward.choices.map((choice) => ({ ...choice, items: scaleItems(choice.items) })) };
+  }
+  return { ...reward, serverAgeTier: tier, items: scaleItems(reward.items) };
+}
+
+export function getNode(nodeId) {
+  return mapNodes.find((node) => node.id === Number(nodeId));
+}

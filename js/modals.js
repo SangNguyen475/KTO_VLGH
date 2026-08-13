@@ -6,7 +6,7 @@ class ModalManager {
     this.handleKeydown = this.handleKeydown.bind(this);
   }
 
-  open({ title, eyebrow = "Vạn Lý Giang Hồ", content, closeable = true, onClose = null }) {
+  open({ title, eyebrow = "Ngũ Nhạc Triều Tông", content, closeable = true, onClose = null }) {
     if (this.current) this.close("replace");
     this.previousFocus = document.activeElement;
 
