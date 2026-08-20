@@ -2,11 +2,10 @@ import {
   EVENT_CONFIG,
   cumulativeQuests,
   dailyQuests,
+  goldenDayRewards,
   mapNodes,
   oneTimeQuest,
-  rechargeMilestones,
-  referralProfiles,
-  trấnNhạcRewards
+  rechargeMilestones
 } from "./event-config.js";
 
 const dayFormatterCache = new Map();
@@ -75,12 +74,11 @@ export function demoClockAnchors({ day, realNow, eventStartTime, eventEndTime, c
 }
 
 export function getEventStatus({ now, startTime, endTime }, config = EVENT_CONFIG) {
-  if (now < startTime) return { phase: "scheduled", eventDay: null, earningOpen: false, actionsOpen: false };
+  if (now < startTime) return { phase: "upcoming", eventDay: null, earningOpen: false, actionsOpen: false };
   if (now >= endTime) return { phase: "ended", eventDay: null, earningOpen: false, actionsOpen: false };
   const eventDay = calendarDayOrdinal(now, config.timezone) - calendarDayOrdinal(startTime, config.timezone) + 1;
   if (eventDay < 1 || eventDay > config.durationDays) return { phase: "ended", eventDay: null, earningOpen: false, actionsOpen: false };
-  const settlement = eventDay === config.durationDays;
-  return { phase: settlement ? "settlement" : "active", eventDay, earningOpen: !settlement, actionsOpen: true };
+  return { phase: "active", eventDay, earningOpen: true, actionsOpen: true };
 }
 
 export function countdownRemaining({ now, startTime, endTime }) {
@@ -115,21 +113,21 @@ export function buildMovementPath(startPosition, steps, nodeCount = mapNodes.len
   return { path, finalPosition: position, roundsCompleted };
 }
 
-export function resolveRoll({ sonTheReady, forcedResult = null, random = Math.random }) {
+export function resolveRoll({ vanKhiReady, forcedResult = null, random = Math.random }) {
   const forced = forcedResult === null || forcedResult === "auto" ? null : Number(forcedResult);
   if (forced !== null && (!Number.isInteger(forced) || forced < 1 || forced > 6)) {
     return { ok: false, error: "Kết quả ép phải nằm trong khoảng 1-6." };
   }
-  if (sonTheReady && forced !== null && forced < 4) {
-    return { ok: false, error: "Sơn Thế đã sẵn sàng: lượt bảo hiểm chỉ cho phép kết quả 4-6." };
+  if (vanKhiReady && forced !== null && forced < 4) {
+    return { ok: false, error: "Vận Khí đã sẵn sàng: lượt bảo hiểm chỉ cho phép kết quả 4-6." };
   }
-  const min = sonTheReady ? 4 : 1;
+  const min = vanKhiReady ? 4 : 1;
   const max = 6;
   const result = forced ?? (min + Math.floor(random() * (max - min + 1)));
-  return { ok: true, result, powered: sonTheReady };
+  return { ok: true, result, powered: vanKhiReady };
 }
 
-export function nextSonThe({ layers, ready }, result, powered) {
+export function nextVanKhi({ layers, ready }, result, powered) {
   if (powered) return { layers: 0, ready: false };
   if (result !== 1 && result !== 2) return { layers, ready };
   const nextLayers = Math.min(3, layers + 1);
@@ -144,14 +142,6 @@ export function singleClaimKey(sourceType, sourceId) {
   return `${sourceType}:${sourceId}`;
 }
 
-export function roundTokenClaimKey(completedRoundNumber) {
-  return `round-token:${completedRoundNumber}`;
-}
-
-export function canGrantRoundToken({ eventDay, grantedCount }, config = EVENT_CONFIG) {
-  return eventDay >= 1 && eventDay <= config.earningDays && grantedCount < config.roundTokenCap;
-}
-
 export function milestoneStatus(milestone, state) {
   if (state.claimedMilestones.includes(milestone.rounds)) return "claimed";
   if (state.completedRounds >= milestone.rounds) return "claimable";
@@ -159,14 +149,12 @@ export function milestoneStatus(milestone, state) {
 }
 
 export function sourceTotals() {
-  const daily = dailyQuests.reduce((sum, quest) => sum + quest.amount, 0) * EVENT_CONFIG.earningDays;
+  const daily = dailyQuests.reduce((sum, quest) => sum + quest.amount, 0) * EVENT_CONFIG.durationDays;
   const cumulative = cumulativeQuests.reduce((sum, quest) => sum + quest.amount, 0);
-  const bonusDays = trấnNhạcRewards.reduce((sum, reward) => sum + reward.amount, 0);
-  const rounds = EVENT_CONFIG.roundTokenCap;
+  const bonusDays = goldenDayRewards.reduce((sum, reward) => sum + reward.amount, 0);
   const oneTime = oneTimeQuest.amount;
-  const referral = referralProfiles.reduce((sum, profile) => sum + profile.amount, 0);
   const recharge = rechargeMilestones.reduce((sum, milestone) => sum + milestone.tokens, 0);
-  return { daily, cumulative, bonusDays, rounds, oneTime, free: daily + cumulative + bonusDays + rounds + oneTime, referral, recharge };
+  return { daily, cumulative, bonusDays, oneTime, free: daily + cumulative + bonusDays + oneTime, recharge, total: daily + cumulative + bonusDays + oneTime + recharge };
 }
 
 export function sourceGroupTotal(ledger, sourceTypes) {

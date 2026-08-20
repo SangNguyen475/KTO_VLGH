@@ -10,7 +10,6 @@
 .quest-card__bottom,
 .reward-row,
 .panel-actions,
-.invite-code,
 .rule-layout,
 .recharge-summary {
   display: flex;
@@ -876,6 +875,15 @@
   font-size: 12px;
 }
 
+.quest-link-button {
+  display: inline-flex;
+  min-width: 44px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none;
+}
+
 .full {
   width: 100%;
   padding: 10px;
@@ -1013,7 +1021,6 @@
 
 .quest-grid,
 .milestone-road,
-.friend-list,
 .recharge-road {
   display: grid;
   gap: 12px;
@@ -1148,72 +1155,11 @@
   font-size: 18px;
 }
 
-.invite-hero,
 .recharge-summary {
   margin-bottom: 18px;
   padding: 20px;
   border: 1px solid #ae854b;
   background: linear-gradient(135deg, #f9eccc, #dfc28d);
-}
-
-.invite-hero {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 16px;
-}
-
-.invite-code {
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.invite-code code {
-  padding: 9px 12px;
-  border: 1px dashed #7d5a35;
-  background: rgba(255,255,255,.46);
-  font-family: var(--font-number);
-  font-size: 17px;
-  letter-spacing: .08em;
-}
-
-.invite-limit {
-  display: grid;
-  min-width: 130px;
-  place-items: center;
-  border-left: 1px solid #ad8a57;
-  text-align: center;
-}
-
-.invite-limit strong {
-  color: var(--color-crimson);
-  font-family: var(--font-number);
-  font-size: 30px;
-}
-
-.friend-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.friend-card {
-  padding: 16px;
-  border: 1px solid #b38f5e;
-  background: rgba(255,249,237,.7);
-}
-
-.friend-card h3 {
-  color: var(--color-crimson);
-}
-
-.friend-card p {
-  min-height: 40px;
-  margin: 8px 0;
-  color: var(--color-ink-muted);
-  font-size: 13px;
-}
-
-.friend-card.invalid {
-  background: rgba(122, 111, 96, .12);
-  filter: grayscale(.3);
 }
 
 .recharge-summary {
@@ -1600,11 +1546,6 @@
   background: rgba(104, 37, 20, .97);
 }
 
-.phase-banner.settlement {
-  background: rgba(105, 68, 17, .97);
-  animation: warning-pulse 1.8s ease-in-out infinite;
-}
-
 .phase-banner.ended {
   background: rgba(48, 52, 42, .97);
 }
@@ -1688,7 +1629,7 @@
 }
 
 .qi-orbs.ready i,
-.son-the-ready .qi-orbs i {
+.van-khi-ready .qi-orbs i {
   box-shadow: 0 0 12px #e5bc49, inset 0 0 5px #fff4bd;
 }
 

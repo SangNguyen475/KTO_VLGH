@@ -6,11 +6,9 @@ import { createModalManager } from "./modals.js";
 import { MovementEngine } from "./movement.js";
 import { renderQuestPanel, renderQuickQuests } from "./quests.js";
 import {
-  renderFriendsPanel,
   renderInventoryPanel,
   renderJourneyPanel,
-  renderLedgerPanel,
-  renderRechargePanel
+  renderLedgerPanel
 } from "./rewards.js";
 import { renderOperationsPanel } from "./operations.js";
 
@@ -54,18 +52,14 @@ const navItems = [
   { id: "quests", label: "Nhiệm Vụ", icon: "令" },
   { id: "journey", label: "Sơn Ấn", icon: "印" },
   { id: "inventory", label: "Hành Trang", icon: "囊" },
-  { id: "friends", label: "Bằng Hữu", icon: "盟" },
-  { id: "recharge", label: "Tích Nạp", icon: "寶" },
   { id: "ledger", label: "Lịch Sử", icon: "簿" },
   { id: "rules", label: "Thể Lệ", icon: "律" }
 ];
 
 const panelMeta = {
   quests: ["Hiệu Triệu Ngũ Nhạc", "Nhiệm Vụ Nhận Lệnh"],
-  journey: ["Ngũ Nhạc Sơn Ấn", "Mốc Tuần Nhạc"],
-  inventory: ["Cơ Duyên Đã Nhận", "Hành Trang"],
-  friends: ["Kết Nghĩa Đồng Hành", "Bằng Hữu"],
-  recharge: ["Stretch Progression", "Tích Nạp Demo"],
+  journey: ["Ngũ Nhạc Sơn Ấn", "Mốc Vòng Ngũ Nhạc"],
+  inventory: ["Duyên Đã Nhận", "Hành Trang"],
   ledger: ["Giao Dịch Idempotent", "Lịch Sử Ngũ Nhạc Lệnh"],
   rules: ["Bí Điển Sự Kiện", "Thể Lệ"],
   settings: ["Thiết Lập & Vận Hành", "Cài Đặt"],
@@ -200,7 +194,7 @@ function renderMorePanel() {
   refs.panelBody.replaceChildren();
   const grid = document.createElement("div");
   grid.className = "settings-grid";
-  [["Hành Trang", "囊", "inventory"], ["Bằng Hữu", "盟", "friends"], ["Tích Nạp", "寶", "recharge"], ["Lịch Sử Lệnh", "簿", "ledger"], ["Thể Lệ", "律", "rules"], ["Cài đặt & DEV", "⚙", "settings"]].forEach(([label, icon, panel]) => {
+  [["Hành Trang", "囊", "inventory"], ["Lịch Sử Lệnh", "簿", "ledger"], ["Thể Lệ", "律", "rules"], ["Cài đặt & DEV", "⚙", "settings"]].forEach(([label, icon, panel]) => {
     const action = document.createElement("button");
     action.type = "button";
     action.className = "setting-card";
@@ -271,8 +265,6 @@ function openPanel(panelId) {
   if (panelId === "quests") renderQuestPanel(refs.panelBody, store, handlers);
   else if (panelId === "journey") renderJourneyPanel(refs.panelBody, store, handlers);
   else if (panelId === "inventory") renderInventoryPanel(refs.panelBody, store);
-  else if (panelId === "friends") renderFriendsPanel(refs.panelBody, store, handlers);
-  else if (panelId === "recharge") renderRechargePanel(refs.panelBody, store, handlers);
   else if (panelId === "ledger") renderLedgerPanel(refs.panelBody, store);
   else if (panelId === "rules") renderRulesPanel();
   else if (panelId === "settings") renderSettingsPanel();
@@ -309,10 +301,6 @@ function renderPhaseBanner(state, eventStatus) {
     refs.phaseBanner.textContent = `Nhân vật Lv${state.playerLevel}: cần đạt Lv20 để tham gia.`;
     refs.phaseBanner.classList.add("warning");
     refs.phaseBanner.hidden = false;
-  } else if (eventStatus.phase === "settlement") {
-    refs.phaseBanner.textContent = "Ngày 10: Không phát sinh Lệnh mới. Hãy dùng Lệnh còn lại và nhận thưởng trước khi event kết thúc.";
-    refs.phaseBanner.classList.add("settlement");
-    refs.phaseBanner.hidden = false;
   } else if (eventStatus.phase === "ended") {
     refs.phaseBanner.textContent = "Sự kiện đã kết thúc. Tiến độ và lịch sử chỉ còn chế độ xem.";
     refs.phaseBanner.classList.add("ended");
@@ -330,23 +318,23 @@ function renderState(state) {
   refs.progressFill.parentElement.setAttribute("aria-valuenow", String(state.currentPosition));
   const next = milestones.find((item) => state.completedRounds < item.rounds);
   refs.nextMilestone.textContent = next ? `${next.rounds} Sơn Ấn` : "Viên mãn";
-  [...refs.pityOrbs.children].forEach((orb, index) => orb.classList.toggle("active", index < state.sonTheLayers));
-  refs.pityOrbs.classList.toggle("ready", state.sonTheReady);
-  refs.pityOrbs.setAttribute("aria-label", state.sonTheReady ? "Sơn Thế đã sẵn sàng, lượt kế tiếp đạt 4 đến 6" : `Sơn Thế ${state.sonTheLayers} trên 3`);
+  [...refs.pityOrbs.children].forEach((orb, index) => orb.classList.toggle("active", index < state.vanKhiLayers));
+  refs.pityOrbs.classList.toggle("ready", state.vanKhiReady);
+  refs.pityOrbs.setAttribute("aria-label", state.vanKhiReady ? "Vận Khí đã sẵn sàng, lượt kế tiếp đạt 4 đến 6" : `Vận Khí ${state.vanKhiLayers} trên 3`);
 
   const eligible = isEligible(state.playerLevel);
   const hasAction = Boolean(state.pendingAction);
   refs.movementButton.disabled = state.offline || !navigator.onLine || !eventStatus.actionsOpen || !eligible;
-  refs.movementButton.classList.toggle("qi-ready", state.sonTheReady);
+  refs.movementButton.classList.toggle("qi-ready", state.vanKhiReady);
   if (hasAction) {
     refs.movementLabel.textContent = state.pendingAction.status === "rewards_pending" ? "Tiếp tục nhận thưởng" : "Tiếp tục lượt đang dở";
     refs.movementHint.textContent = "Không trừ thêm Lệnh · không random lại";
   } else {
     refs.movementLabel.textContent = TERMS.action;
-    refs.movementHint.textContent = state.sonTheReady ? "Sơn Thế · đảm bảo 4–6 bước" : "Tả Lăng Tung phát lệnh";
+    refs.movementHint.textContent = state.vanKhiReady ? "Vận Khí · đảm bảo 4–6 bước" : "Thức Khinh Công 1–6 bước";
   }
   refs.app.classList.toggle("effects-reduced", state.reducedEffects);
-  refs.app.classList.toggle("son-the-ready", state.sonTheReady);
+  refs.app.classList.toggle("van-khi-ready", state.vanKhiReady);
   refs.soundToggle.classList.toggle("is-on", state.soundEnabled);
   refs.soundToggle.textContent = state.soundEnabled ? "♫" : "♪";
   refs.connectionBanner.hidden = !state.offline && navigator.onLine;
@@ -362,7 +350,7 @@ function updateCountdown() {
   const state = store.get();
   const effectiveNow = store.getEffectiveNow(realNow);
   refs.devClockBadge.hidden = state.clockMode !== "demo";
-  refs.eventPhase.textContent = status.phase === "scheduled"
+  refs.eventPhase.textContent = status.phase === "upcoming"
     ? "Bắt đầu sau"
     : status.phase === "ended"
       ? "Đã kết thúc"
@@ -374,7 +362,7 @@ function updateCountdown() {
   }
   const remaining = countdownRemaining({ now: effectiveNow, startTime: state.eventStartTime, endTime: state.eventEndTime });
   refs.countdown.textContent = formatCountdownDuration(remaining);
-  refs.countdown.closest(".countdown-stat").classList.toggle("ending", status.phase === "settlement");
+  refs.countdown.closest(".countdown-stat").classList.toggle("ending", status.phase === "active" && status.eventDay === EVENT_CONFIG.durationDays);
 }
 
 function bindGlobalUI() {
@@ -439,6 +427,10 @@ function init() {
   if (!countdownTimer) countdownTimer = setInterval(updateCountdown, 1000);
   const status = store.getEventStatus();
   store.log("eligibility_checked", { level: store.get().playerLevel, eligible: isEligible(store.get().playerLevel), eventDay: status.eventDay });
+  if (store.get().migrationNotice) {
+    toast("Dữ liệu demo đã được cập nhật theo proposal Hành Trình Ngũ Nhạc; tiến độ event cũ đã được reset an toàn.", 6000);
+    store.update({ migrationNotice: false });
+  }
   if (store.get().pendingAction) toast("Có một lượt đang dở. Chọn “Tiếp tục lượt đang dở” để phục hồi.", 5000);
 }
 

@@ -5,7 +5,6 @@ import {
   milestones,
   nodeTypes,
   rechargeMilestones,
-  referralProfiles,
   rewardSummary
 } from "./event-config.js";
 import { milestoneStatus, singleClaimKey } from "./game-rules.js";
@@ -33,23 +32,6 @@ function rewardHero({ glyph, name, description, buttonLabel = "Nhận Thưởng"
 function queueNext(deps, actionId) {
   deps.modals.close("reward-settled");
   requestAnimationFrame(() => processPendingRewards({ ...deps, actionId }));
-}
-
-function showRoundTokenNotice(reward, deps) {
-  const { wrap, button } = rewardHero({
-    glyph: "印",
-    name: `Ngũ Nhạc Sơn Ấn · ${reward.payload.roundNumber}`,
-    description: reward.payload.granted
-      ? "Hoàn thành Tuần Nhạc: Sơn Ấn tăng 1 và đã cấp 1 Ngũ Nhạc Lệnh."
-      : "Hoàn thành Tuần Nhạc: Sơn Ấn tăng 1. Không cấp thêm Lệnh do đã chạm cap hoặc đang ở ngày 10.",
-    buttonLabel: "Tiếp Tục"
-  });
-  button.addEventListener("click", () => {
-    deps.store.acknowledgeReward(reward.rewardId);
-    queueNext(deps, reward.actionId);
-  });
-  deps.modals.open({ title: "Hoàn Thành Tuần Nhạc", eyebrow: "Ngũ Nhạc Sơn Ấn", content: wrap, closeable: false });
-  deps.playSound?.("round");
 }
 
 function showFixedNodeReward(reward, node, deps) {
@@ -198,7 +180,6 @@ export function processPendingRewards(deps) {
     return;
   }
   const reward = queue[0];
-  if (reward.rewardType === "round_token") return showRoundTokenNotice(reward, deps);
   if (reward.rewardType === "milestone") return showMilestoneReward(reward, deps);
   const node = getNode(reward.payload.nodeId);
   if (!node) {
@@ -263,7 +244,7 @@ export function renderJourneyPanel(container, store, handlers) {
     container.replaceChildren();
     const intro = document.createElement("section");
     intro.className = "journey-summary";
-    intro.innerHTML = `<span><small>Ngũ Nhạc Sơn Ấn</small><strong>${state.completedRounds}</strong></span><p>Đang chinh phục Tuần Nhạc ${state.completedRounds + 1}. Mốc 14 là core completion, mốc 17 là cosmetic target.</p>`;
+    intro.innerHTML = `<span><small>Ngũ Nhạc Sơn Ấn</small><strong>${state.completedRounds}</strong></span><p>Đang chinh phục Vòng Ngũ Nhạc ${state.completedRounds + 1}. Mốc 14 là core completion, mốc 17 là cosmetic target.</p>`;
     const road = document.createElement("div");
     road.className = "milestone-road";
     milestones.forEach((milestone) => {
@@ -311,53 +292,6 @@ export function renderJourneyPanel(container, store, handlers) {
   draw();
 }
 
-export function renderFriendsPanel(container, store, handlers) {
-  const draw = () => {
-    const state = store.get();
-    container.replaceChildren();
-    const claimed = state.tokenLedger.filter((entry) => entry.sourceType === "referral" && entry.status === "claimed").reduce((sum, entry) => sum + entry.amount, 0);
-    const hero = document.createElement("section");
-    hero.className = "invite-hero";
-    const copy = document.createElement("div");
-    copy.innerHTML = `<h2>Mật Lệnh Ngũ Nhạc</h2><p>Ba hồ sơ NRU/reactivated hợp lệ, mỗi hồ sơ nhận 3 Lệnh.</p><div class="invite-code"><code>NGUNHAC-7K9M</code></div>`;
-    const limit = document.createElement("div");
-    limit.className = "invite-limit";
-    limit.innerHTML = `<strong>${claimed}/${EVENT_CONFIG.referralTokenCap}</strong><span>Lệnh đã nhận</span>`;
-    hero.append(copy, limit);
-    const list = document.createElement("div");
-    list.className = "friend-list";
-    referralProfiles.forEach((profile) => {
-      const profileStatus = state.referralStatuses[profile.id] || profile.status;
-      const claimKey = singleClaimKey("referral", profile.id);
-      const isClaimed = state.claimedKeys.includes(claimKey);
-      const card = document.createElement("article");
-      card.className = `friend-card ${profileStatus}`;
-      const title = document.createElement("h3");
-      title.textContent = profile.name;
-      const detail = document.createElement("p");
-      detail.textContent = profile.detail;
-      const chip = document.createElement("span");
-      const status = isClaimed ? "claimed" : profileStatus;
-      chip.className = `status-chip ${status}`;
-      chip.textContent = isClaimed ? "Đã nhận" : profileStatus === "claimable" ? "Hợp lệ" : profileStatus === "invalid" ? "Không hợp lệ" : "Đang xác minh";
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "jade-button compact";
-      button.textContent = isClaimed ? "Đã Nhận" : `Nhận ×${profile.amount}`;
-      button.disabled = isClaimed || profileStatus !== "claimable" || store.getEventStatus().phase === "ended";
-      button.addEventListener("click", () => {
-        const result = store.grantTokens({ sourceType: "referral", sourceId: profile.id, amount: profile.amount, claimKey });
-        if (result.ok) handlers.toast(`Nhận ${profile.amount} Ngũ Nhạc Lệnh từ ${profile.name}.`);
-        draw();
-      });
-      card.append(title, detail, chip, button);
-      list.append(card);
-    });
-    container.append(hero, list);
-  };
-  draw();
-}
-
 export function renderRechargePanel(container, store, handlers) {
   const draw = () => {
     const state = store.get();
@@ -390,7 +324,8 @@ export function renderRechargePanel(container, store, handlers) {
       button.addEventListener("click", () => {
         const result = store.grantTokens({ sourceType: "recharge", sourceId: milestone.id, amount: milestone.tokens, claimKey });
         if (result.ok) handlers.toast(`Nhận ${milestone.tokens} Ngũ Nhạc Lệnh từ mốc tích nạp.`);
-        draw();
+        if (result.ok && handlers.onRechargeChanged) handlers.onRechargeChanged();
+        else draw();
       });
       card.append(button);
       road.append(card);
@@ -434,7 +369,7 @@ export function renderLedgerPanel(container, store) {
   container.replaceChildren();
   const stats = document.createElement("section");
   stats.className = "source-summary";
-  stats.innerHTML = `<div><small>Miễn phí</small><strong>${summary.free}/${EVENT_CONFIG.freeTokenCap}</strong></div><div><small>Bằng hữu</small><strong>${summary.referral}/${EVENT_CONFIG.referralTokenCap}</strong></div><div><small>Tích nạp</small><strong>${summary.recharge}/${EVENT_CONFIG.rechargeTokenCap}</strong></div><div><small>DEV</small><strong>${summary.debug}</strong></div>`;
+  stats.innerHTML = `<div><small>Miễn phí</small><strong>${summary.free}/${EVENT_CONFIG.freeTokenCap}</strong></div><div><small>Tích nạp</small><strong>${summary.recharge}/${EVENT_CONFIG.rechargeTokenCap}</strong></div><div><small>Tổng proposal</small><strong>${summary.free + summary.recharge}/100</strong></div><div><small>DEV</small><strong>${summary.debug}</strong></div>`;
   const list = document.createElement("div");
   list.className = "ledger-list";
   [...state.tokenLedger].reverse().forEach((entry) => {

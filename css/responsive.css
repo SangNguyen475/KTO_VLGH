@@ -100,10 +100,6 @@
     grid-template-columns: 1fr;
   }
 
-  .friend-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .recharge-road {
     grid-template-columns: repeat(2, minmax(180px, 1fr));
   }
@@ -371,17 +367,6 @@
     background: rgba(247, 238, 210, .94);
   }
 
-  .invite-hero {
-    grid-template-columns: 1fr;
-  }
-
-  .invite-limit {
-    min-height: 80px;
-    border-top: 1px solid #ad8a57;
-    border-left: 0;
-  }
-
-  .friend-list,
   .recharge-road,
   .settings-grid {
     grid-template-columns: 1fr;

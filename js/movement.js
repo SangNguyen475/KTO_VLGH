@@ -1,5 +1,5 @@
 import { movementForms } from "./event-config.js";
-import { buildMovementPath, isEligible, nextSonThe, resolveRoll } from "./game-rules.js";
+import { buildMovementPath, isEligible, nextVanKhi, resolveRoll } from "./game-rules.js";
 import { processPendingRewards } from "./rewards.js";
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -38,7 +38,7 @@ export class MovementEngine {
     const content = document.createElement("div");
     const hint = document.createElement("p");
     hint.className = "modal-intro";
-    hint.textContent = powered ? "Sơn Thế đã viên mãn · chỉ xuất hiện kết quả 4-6." : "Sáu thức Đạp Nhạc đang tụ sơn thế…";
+    hint.textContent = powered ? "Vận Khí đã viên mãn · chỉ xuất hiện kết quả 4-6." : "Sáu Thức Khinh Công đang chờ hiệu lệnh…";
     const fan = document.createElement("div");
     fan.className = "draw-fan";
     movementForms.forEach((form, index) => {
@@ -52,7 +52,7 @@ export class MovementEngine {
       fan.append(item);
     });
     content.append(hint, fan);
-    this.modals.open({ title: "Đạp Nhạc Tung Bộ", eyebrow: powered ? "Sơn Thế bảo hiểm" : "Tả Lăng Tung phát lệnh", content, closeable: false });
+    this.modals.open({ title: "Thi triển Khinh Công", eyebrow: powered ? "Vận Khí bảo hiểm" : "Thức Khinh Công", content, closeable: false });
     this.playSound("draw");
     const reduced = this.store.get().reducedEffects;
     await wait(reduced ? 30 : 560);
@@ -168,7 +168,7 @@ export class MovementEngine {
       return;
     }
     if (!isEligible(state.playerLevel)) {
-      this.toast("Cần đạt Lv20 để tham gia Ngũ Nhạc Triều Tông.");
+      this.toast("Cần đạt Lv20 để tham gia Hành Trình Ngũ Nhạc.");
       return;
     }
     if (state.movementTokens <= 0) {
@@ -177,13 +177,13 @@ export class MovementEngine {
       return;
     }
 
-    const roll = resolveRoll({ sonTheReady: state.sonTheReady, forcedResult: state.forcedRoll });
+    const roll = resolveRoll({ vanKhiReady: state.vanKhiReady, forcedResult: state.forcedRoll });
     if (!roll.ok) {
       this.toast(roll.error);
       return;
     }
     const movement = buildMovementPath(state.currentPosition, roll.result);
-    const pity = nextSonThe({ layers: state.sonTheLayers, ready: state.sonTheReady }, roll.result, roll.powered);
+    const pity = nextVanKhi({ layers: state.vanKhiLayers, ready: state.vanKhiReady }, roll.result, roll.powered);
     const actionId = `action-${Date.now()}-${state.actionSequence + 1}`;
     const action = {
       actionId,
@@ -204,11 +204,11 @@ export class MovementEngine {
     this.speedButton.textContent = "Tăng tốc ×2";
     this.running = true;
     try {
-      if (roll.powered) this.toast("Sơn Thế viên mãn: lượt bảo hiểm chỉ xuất hiện kết quả 4-6.");
-      else if (roll.result === 1 || roll.result === 2) this.toast(`Sơn Thế tích tụ: ${pity.layers}/3.`);
+      if (roll.powered) this.toast("Vận Khí viên mãn: lượt bảo hiểm chỉ xuất hiện kết quả 4-6.");
+      else if (roll.result === 1 || roll.result === 2) this.toast(`Vận Khí tích tụ: ${pity.layers}/3.`);
       await this.runCommittedAction();
     } catch (error) {
-      console.error("Lỗi trong luồng Đạp Nhạc:", error);
+      console.error("Lỗi trong luồng Thi triển Khinh Công:", error);
       this.toast("Hành trình gián đoạn. Lượt đã được giữ để tiếp tục, không random lại.");
     } finally {
       this.running = false;

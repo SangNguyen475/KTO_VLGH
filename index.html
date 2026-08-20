@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#22170f">
-  <meta name="description" content="Vạn Lý Giang Hồ: Ngũ Nhạc Triều Tông — tích Sơn Thế, vượt Ngũ Nhạc và nhận đại thưởng.">
-  <title>Vạn Lý Giang Hồ: Ngũ Nhạc Triều Tông</title>
-  <link rel="stylesheet" href="./css/tokens.css?v=2">
-  <link rel="stylesheet" href="./css/base.css?v=2">
-  <link rel="stylesheet" href="./css/layout.css?v=2">
-  <link rel="stylesheet" href="./css/components.css?v=2">
-  <link rel="stylesheet" href="./css/animations.css?v=2">
-  <link rel="stylesheet" href="./css/responsive.css?v=2">
+  <meta name="description" content="Vạn Lý Giang Hồ: Hành Trình Ngũ Nhạc — thi triển Khinh Công, tích Ngũ Nhạc Sơn Ấn và nhận đại thưởng.">
+  <title>Vạn Lý Giang Hồ: Hành Trình Ngũ Nhạc</title>
+  <link rel="stylesheet" href="./css/tokens.css?v=3">
+  <link rel="stylesheet" href="./css/base.css?v=3">
+  <link rel="stylesheet" href="./css/layout.css?v=3">
+  <link rel="stylesheet" href="./css/components.css?v=3">
+  <link rel="stylesheet" href="./css/animations.css?v=3">
+  <link rel="stylesheet" href="./css/responsive.css?v=3">
 </head>
 <body>
   <div class="app-shell" id="app">
@@ -22,11 +22,11 @@
     <div class="phase-banner" id="phaseBanner" role="status" aria-live="polite" hidden></div>
 
     <header class="topbar">
-      <div class="brand-lockup" aria-label="Vạn Lý Giang Hồ: Ngũ Nhạc Triều Tông">
+      <div class="brand-lockup" aria-label="Vạn Lý Giang Hồ: Hành Trình Ngũ Nhạc">
         <div class="brand-seal" aria-hidden="true">岳</div>
         <div class="brand-copy">
-          <strong>Ngũ Nhạc Triều Tông</strong>
-          <span>Mỗi bước tụ sơn thế</span>
+          <strong>Hành Trình Ngũ Nhạc</strong>
+          <span>Thi triển Khinh Công</span>
         </div>
       </div>
 
@@ -58,10 +58,10 @@
           <small>Ngũ Nhạc Lệnh</small>
           <strong id="cardCount">0</strong>
         </div>
-        <div class="resource-plaque qinggong-resource" title="Đủ ba tầng Sơn Thế, lượt kế tiếp chắc chắn đạt 4–6 bước">
+        <div class="resource-plaque qinggong-resource" title="Đủ ba tầng Vận Khí, lượt kế tiếp chắc chắn đạt 4–6 bước">
           <span aria-hidden="true">山</span>
-          <small>Sơn Thế</small>
-          <div class="qi-orbs" id="qiOrbs" aria-label="Sơn Thế 0 trên 3">
+          <small>Vận Khí</small>
+          <div class="qi-orbs" id="qiOrbs" aria-label="Vận Khí 0 trên 3">
             <i></i><i></i><i></i>
           </div>
         </div>
@@ -102,9 +102,9 @@
 
         <div class="map-top-tools">
           <div class="map-legend" aria-label="Chú giải bản đồ">
-            <span><i class="legend-shape normal"></i>Cơ Duyên</span>
-            <span><i class="legend-shape rare"></i>Kỳ Duyên</span>
-            <span><i class="legend-shape legendary"></i>Thiên Duyên</span>
+            <span><i class="legend-shape normal"></i>Duyên Thường</span>
+            <span><i class="legend-shape rare"></i>Duyên Hiếm</span>
+            <span><i class="legend-shape legendary"></i>Duyên Quý</span>
           </div>
           <button class="wood-button compact" id="focusHero" type="button" aria-label="Trở về vị trí nhân vật">⌖ Nhân vật</button>
         </div>
@@ -117,7 +117,7 @@
 
         <div class="movement-hud" id="movementHud" hidden>
           <div>
-            <small>Đạp Nhạc Tung Bộ đang thi triển</small>
+            <small>Khinh Công đang thi triển</small>
             <strong>Còn <span id="stepsRemaining">0</span> bước</strong>
           </div>
           <button class="wood-button compact" id="speedMovement" type="button">Tăng tốc ×2</button>
@@ -126,11 +126,11 @@
 
         <div class="primary-cta-wrap">
           <span class="cta-cost">Tiêu hao <b>令 ×1</b> · Hiện có <b id="ctaCardCount">0</b></span>
-          <button class="primary-cta" id="movementButton" type="button" aria-label="Thi triển Đạp Nhạc Tung Bộ, tiêu hao một Ngũ Nhạc Lệnh">
+          <button class="primary-cta" id="movementButton" type="button" aria-label="Thi triển Khinh Công, tiêu hao một Ngũ Nhạc Lệnh">
             <span class="cta-sword" aria-hidden="true">山</span>
             <span>
-              <small id="movementHint">Tả Lăng Tung phát lệnh</small>
-              <strong id="movementLabel">Thi triển Đạp Nhạc Tung Bộ</strong>
+              <small id="movementHint">Thức Khinh Công 1–6 bước</small>
+              <strong id="movementLabel">Thi triển Khinh Công</strong>
             </span>
           </button>
         </div>
@@ -167,6 +167,6 @@
     <div class="modal-layer" id="modalLayer" aria-live="polite"></div>
   </div>
 
-  <script type="module" src="./js/app.js?v=2"></script>
+  <script type="module" src="./js/app.js?v=4"></script>
 </body>
 </html>

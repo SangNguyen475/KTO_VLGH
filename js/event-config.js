@@ -1,36 +1,32 @@
 export const EVENT_CONFIG = Object.freeze({
-  id: "ngu-nhac-trieu-tong-2026-v2",
-  name: "Vạn Lý Giang Hồ: Ngũ Nhạc Triều Tông",
-  shortName: "Ngũ Nhạc Triều Tông",
-  masterMessage: "Mỗi bước tụ sơn thế, Ngũ Nhạc cùng định giang hồ.",
+  id: "hanh-trinh-ngu-nhac-2026-v3",
+  name: "Vạn Lý Giang Hồ: Hành Trình Ngũ Nhạc",
+  shortName: "Hành Trình Ngũ Nhạc",
+  masterMessage: "Thi triển Khinh Công, chinh phục hành trình Ngũ Nhạc.",
   timezone: "Asia/Ho_Chi_Minh",
   durationDays: 10,
-  earningDays: 9,
   minLevel: 20,
-  allowTokenGrantOnSettlementDay: false,
-  roundTokenCap: 2,
   freeTokenCap: 70,
-  referralTokenCap: 9,
   rechargeTokenCap: 30,
   telemetryLimit: 180,
-  storageKey: "van-ly-giang-ho-ngu-nhac-v3",
-  previousStorageKey: "van-ly-giang-ho-ngu-nhac-v2"
+  storageKey: "van-ly-giang-ho-ngu-nhac-v4",
+  previousStorageKey: "van-ly-giang-ho-ngu-nhac-v3"
 });
 
 export const TERMS = Object.freeze({
   token: "Ngũ Nhạc Lệnh",
-  action: "Thi triển Đạp Nhạc Tung Bộ",
-  round: "Tuần Nhạc",
+  action: "Thi triển Khinh Công",
+  round: "Vòng Ngũ Nhạc",
   seal: "Ngũ Nhạc Sơn Ấn",
-  pity: "Sơn Thế",
-  bonusDay: "Ngày Trấn Nhạc",
+  pity: "Vận Khí",
+  bonusDay: "Ngày Vàng",
   finish: "Thắng Quán Phong"
 });
 
 export const nodeTypes = Object.freeze({
-  normal: "Cơ Duyên",
-  rare: "Kỳ Duyên",
-  legendary: "Thiên Duyên"
+  normal: "Duyên Thường",
+  rare: "Duyên Hiếm",
+  legendary: "Duyên Quý"
 });
 
 export const serverAgeRewardMultipliers = Object.freeze({
@@ -49,9 +45,9 @@ const fixedReward = (name, quantity, group) => ({
 });
 
 export const mapNodes = Object.freeze([
-  { id: 1, name: "Sơn Môn Tùng Sơn", x: 13, y: 82, type: "normal", icon: "嵩", reward: fixedReward("Bạc", 5000, "Bạc / Tu Vi") },
-  { id: 2, name: "Bắc Lộc Tùng Sơn", x: 25, y: 72, type: "normal", icon: "麓", reward: fixedReward("Tàng Bảo Đồ", 1, "Bạc / Tàng Bảo Đồ") },
-  { id: 3, name: "Tùng Sơn Kiếm Trận", x: 40, y: 81, type: "rare", icon: "陣", reward: fixedReward("Huyền Tinh Lv3", 1, "Huyền Tinh / Tinh Chú Thạch") },
+  { id: 1, name: "Sơn Môn Tung Sơn", x: 13, y: 82, type: "normal", icon: "嵩", reward: fixedReward("Bạc", 5000, "Bạc / Tu Vi") },
+  { id: 2, name: "Bắc Lộc Tung Sơn", x: 25, y: 72, type: "normal", icon: "麓", reward: fixedReward("Tàng Bảo Đồ", 1, "Bạc / Tàng Bảo Đồ") },
+  { id: 3, name: "Tung Sơn Kiếm Trận", x: 40, y: 81, type: "rare", icon: "陣", reward: fixedReward("Huyền Tinh Lv3", 1, "Huyền Tinh / Tinh Chú Thạch") },
   { id: 4, name: "Trung Châu Cổ Đạo", x: 56, y: 72, type: "normal", icon: "道", reward: fixedReward("Tu Vi", 8000, "Tu Vi / Bạc") },
   { id: 5, name: "Đỉnh Thái Sơn", x: 73, y: 82, type: "rare", icon: "泰", reward: fixedReward("Ngũ Hành Hồn Thạch", 1, "Ngũ Hành Hồn Thạch") },
   { id: 6, name: "Nghĩa Quân Hội Sư", x: 84, y: 69, type: "normal", icon: "義", reward: fixedReward("Bạc", 10000, "Bạc / Tàng Bảo Đồ") },
@@ -104,15 +100,14 @@ export const dailyQuests = Object.freeze([
 export const cumulativeQuests = Object.freeze([
   { id: "login-3", icon: "三", name: "Đăng nhập 3 ngày", description: "Duy trì hành trình trong 3 ngày.", progressKey: "loginDays", target: 3, amount: 2 },
   { id: "login-5", icon: "五", name: "Đăng nhập 5 ngày", description: "Duy trì hành trình trong 5 ngày.", progressKey: "loginDays", target: 5, amount: 3 },
-  { id: "login-7", icon: "七", name: "Đăng nhập 7 ngày", description: "Duy trì hành trình trong 7 ngày.", progressKey: "loginDays", target: 7, amount: 5 },
-  { id: "nghia-quan-9", icon: "俠", name: "9 lần Nghĩa Quân", description: "Hoàn thành tổng 9 lần Nhiệm Vụ Nghĩa Quân.", progressKey: "nghiaQuanTotal", target: 9, amount: 3 }
+  { id: "login-7", icon: "七", name: "Đăng nhập 7 ngày", description: "Duy trì hành trình trong 7 ngày.", progressKey: "loginDays", target: 7, amount: 5 }
 ].map((quest) => ({ ...quest, sourceType: "cumulative" })));
 
-export const trấnNhạcRewards = Object.freeze([3, 6, 9].map((day) => ({
-  id: `tran-nhac-${day}`,
+export const goldenDayRewards = Object.freeze([3, 6, 9].map((day) => ({
+  id: `ngay-vang-${day}`,
   icon: "岳",
-  name: `Ngày ${day} · Trấn Nhạc`,
-  description: `Đăng nhập ngày ${day} để nhận hiệu triệu Ngũ Nhạc.`,
+  name: `Ngày Vàng D${day}`,
+  description: `Đăng nhập trong ngày ${day} để nhận thưởng Ngày Vàng.`,
   day,
   amount: 3,
   sourceType: "bonus-day"
@@ -123,6 +118,7 @@ export const oneTimeQuest = Object.freeze({
   icon: "盟",
   name: "Gia nhập Discord",
   description: "Gia nhập Discord cộng đồng của Kiếm Thế Origin.",
+  externalUrl: "https://discord.gg/vDkWtc2ef",
   target: 1,
   amount: 1,
   sourceType: "one-time"
@@ -132,7 +128,7 @@ export const milestones = Object.freeze([
   { rounds: 2, role: "early", rewards: [{ name: "Bạc", quantity: 10000 }, { name: "Huyền Tinh Lv3", quantity: 2 }] },
   { rounds: 5, role: "progression", rewards: [{ name: "Huyền Tinh Lv5", quantity: 1 }, { name: "Ngũ Hành Hồn Thạch", quantity: 3 }] },
   { rounds: 8, role: "mid", rewards: [{ name: "Thiệp Chiêu Mộ Đồng Hành", quantity: 1 }] },
-  { rounds: 11, role: "retention", rewards: [{ name: "Mảnh Ngoại Trang Trấn Nhạc", quantity: 5 }] },
+  { rounds: 11, role: "retention", rewards: [{ name: "Mảnh Ngoại Trang Tung Sơn", quantity: 5 }] },
   { rounds: 14, role: "core", featured: true, rewards: [{ name: "Rương Hành Trang Tự Chọn", quantity: 1 }, { name: "Tinh Chú Thạch-Trung", quantity: 1 }] },
   {
     rounds: 17,
@@ -141,27 +137,16 @@ export const milestones = Object.freeze([
     cosmetic: true,
     rewards: [],
     choices: [
-      { id: "foot-effect", name: "Hiệu ứng chân Đạp Nhạc Tung Bộ", glyph: "步", items: [{ name: "Hiệu ứng chân Đạp Nhạc Tung Bộ", quantity: 1 }] },
-      { id: "back-cosmetic", name: "Ngoại trang lưng Sơn Hà Trấn Nhạc", glyph: "山", items: [{ name: "Ngoại trang lưng Sơn Hà Trấn Nhạc", quantity: 1 }] }
+      { id: "foot-effect", name: "Hiệu ứng bước chân Ngũ Nhạc", glyph: "步", items: [{ name: "Hiệu ứng bước chân Ngũ Nhạc", quantity: 1 }] },
+      { id: "back-cosmetic", name: "Ngoại trang lưng Sơn Hà", glyph: "山", items: [{ name: "Ngoại trang lưng Sơn Hà", quantity: 1 }] }
     ]
   },
   {
     rounds: 20,
     role: "stretch",
     featured: true,
-    rewards: [],
-    choices: [
-      { id: "title-ngu-nhac", name: "Danh hiệu Ngũ Nhạc Triều Tông", glyph: "岳", items: [{ name: "Danh hiệu Ngũ Nhạc Triều Tông", quantity: 1 }] },
-      { id: "title-tran-nhac", name: "Danh hiệu Trấn Nhạc Định Loạn", glyph: "鎮", items: [{ name: "Danh hiệu Trấn Nhạc Định Loạn", quantity: 1 }] }
-    ]
+    rewards: [{ name: "Danh hiệu Hào Kiệt Ngũ Nhạc", quantity: 1 }]
   }
-]);
-
-export const referralProfiles = Object.freeze([
-  { id: "ref-1", name: "Mặc Phong", status: "claimable", amount: 3, detail: "NRU hợp lệ · Đã đạt Lv30" },
-  { id: "ref-2", name: "Tiểu Vũ", status: "progress", amount: 3, detail: "Reactivated · Đăng nhập 2/3 ngày" },
-  { id: "ref-3", name: "Tần Ca", status: "progress", amount: 3, detail: "NRU · Đang xác minh hoạt động" },
-  { id: "ref-invalid", name: "Hàn Giang", status: "invalid", amount: 0, detail: "Không hợp lệ · Phát hiện hành vi clone" }
 ]);
 
 export const rechargeMilestones = Object.freeze([
@@ -172,17 +157,16 @@ export const rechargeMilestones = Object.freeze([
 ].map((item) => ({ ...item, reviewStatus: "PROPOSAL_CONFIRMED" })));
 
 export const rules = Object.freeze([
-  ["Thời gian", "Sự kiện kéo dài 10 ngày theo múi giờ Asia/Ho_Chi_Minh. Ngày 1-9 nhận Lệnh; ngày 10 chỉ tiêu Lệnh còn lại và nhận thưởng."],
+  ["Thời gian", "Sự kiện kéo dài 10 ngày theo múi giờ Asia/Ho_Chi_Minh. Cả ngày 1-10 đều có thể nhận và sử dụng Lệnh; ngày đổi lúc 00:00."],
   ["Điều kiện", "Nhân vật đạt cấp 20 trở lên và tài khoản hợp lệ."],
-  ["Ngũ Nhạc Lệnh", "Mỗi lần thi triển tiêu hao 1 Lệnh. Lệnh miễn phí đến từ daily, tích lũy, Ngày Trấn Nhạc, Tuần Nhạc và nhiệm vụ một lần."],
-  ["Nguồn miễn phí", "Tối đa 70 Lệnh: 45 daily + 13 tích lũy + 9 Ngày Trấn Nhạc + 2 từ Tuần Nhạc + 1 từ Gia nhập Discord."],
-  ["Đạp Nhạc Tung Bộ", "Mỗi lượt nhận kết quả 1-6 và di chuyển tuần tự; chỉ ô dừng cuối cùng trả reward."],
-  ["Sơn Thế", "Kết quả 1 hoặc 2 cộng một tầng. Đủ 3 tầng, lượt kế tiếp chắc chắn đạt 4-6 rồi reset."],
-  ["Hoàn thành Tuần Nhạc", "Đi qua ô 16 Thắng Quán Phong sẽ tăng Sơn Ấn; bước dư tiếp tục từ ô 1. Ngày 1-9 được thêm 1 Lệnh/vòng, tối đa 2 Lệnh toàn event."],
-  ["Ngày cuối", "Ngày 10 không phát sinh Lệnh mới. Hãy dùng Lệnh còn lại và nhận thưởng trước khi event kết thúc."],
-  ["Bằng hữu", "Ba bằng hữu NRU/reactivated hợp lệ, mỗi hồ sơ 3 Lệnh; tổng tối đa 9. Hồ sơ clone không chiếm quota."],
+  ["Ngũ Nhạc Lệnh", "Mỗi lần Thi triển Khinh Công tiêu hao 1 Lệnh. Hoàn thành Vòng Ngũ Nhạc không cấp thêm Lệnh."],
+  ["Nguồn miễn phí", "Tối đa 70 Lệnh: 50 daily + 10 tích lũy đăng nhập + 9 Ngày Vàng + 1 từ Gia nhập Discord."],
+  ["Thi triển Khinh Công", "Mỗi lượt nhận kết quả 1-6 và di chuyển tuần tự; chỉ ô dừng cuối cùng trả reward."],
+  ["Vận Khí", "Kết quả 1 hoặc 2 cộng một tầng; kết quả 3 không cộng. Đủ 3 tầng, lượt kế tiếp chắc chắn đạt 4-6 rồi reset."],
+  ["Hoàn thành Vòng Ngũ Nhạc", "Đi qua ô 16 Thắng Quán Phong sẽ tăng Ngũ Nhạc Sơn Ấn; bước dư tiếp tục từ ô 1. Đây không phải reward vật phẩm riêng."],
+  ["Ngày Vàng", "Đăng nhập ngày 3, 6 và 9 để nhận 3 Ngũ Nhạc Lệnh tại mỗi mốc."],
   ["Tích nạp", "Bốn mốc 100.000/300.000/500.000/1.000.000 VND cấp cộng dồn 2/4/7/17 Lệnh, tổng tối đa 30."],
-  ["Mốc Sơn Ấn", "Milestone mở theo số vòng thực tế tại 2/5/8/11/14/17/20 Sơn Ấn. Referral và tích nạp chỉ cấp Lệnh, không cấp thẳng milestone."],
+  ["Mốc Sơn Ấn", "Milestone mở theo số vòng thực tế tại 2/5/8/11/14/17/20 Sơn Ấn. Tích nạp chỉ cấp Lệnh, không cấp thẳng milestone."],
   ["Hết hạn", "Sau khi event kết thúc, không thể tạo lượt, di chuyển hoặc claim; lịch sử vẫn có thể xem."]
 ]);
 

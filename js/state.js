@@ -4,23 +4,21 @@ import {
   getNode,
   inventorySeed,
   milestones,
-  referralProfiles,
   resolveRewardForTier
 } from "./event-config.js";
 import {
   dailyClaimKey,
-  canGrantRoundToken,
   demoClockAnchors,
   eventWindowFrom,
   getEventStatus,
   resolveClockNow,
-  roundTokenClaimKey,
   singleClaimKey,
   sourceGroupTotal
 } from "./game-rules.js";
 
 const LEGACY_STORAGE_KEY = "van-ly-giang-ho-demo-v1";
-const FREE_SOURCE_TYPES = ["daily", "cumulative", "bonus-day", "round-token", "one-time"];
+const FREE_SOURCE_TYPES = ["daily", "cumulative", "bonus-day", "one-time"];
+const TOKEN_SOURCE_TYPES = new Set([...FREE_SOURCE_TYPES, "recharge", "debug"]);
 
 const clone = (value) => structuredClone(value);
 const nowIso = () => new Date().toISOString();
@@ -53,7 +51,7 @@ function defaultDailyProgress() {
 function createDefaultState(overrides = {}) {
   const { startTime, endTime } = eventWindowFrom(Date.now());
   const state = {
-    version: 3,
+    version: 4,
     eventStartTime: startTime,
     eventEndTime: endTime,
     clockMode: "real",
@@ -65,18 +63,15 @@ function createDefaultState(overrides = {}) {
     serverAgeTier: "mature",
     currentPosition: 1,
     completedRounds: 0,
-    roundBonusGrantedCount: 0,
     movementTokens: 0,
-    sonTheLayers: 0,
-    sonTheReady: false,
+    vanKhiLayers: 0,
+    vanKhiReady: false,
     dailyProgress: defaultDailyProgress(),
     loginDays: 1,
-    nghiaQuanTotal: 0,
     oneTimeComplete: false,
     tokenLedger: [],
     claimedKeys: [],
     claimedMilestones: [],
-    referralStatuses: Object.fromEntries(referralProfiles.map((profile) => [profile.id, profile.status])),
     totalRecharge: 0,
     inventory: { ...inventorySeed },
     inventoryHistory: [],
@@ -91,6 +86,7 @@ function createDefaultState(overrides = {}) {
     soundEnabled: false,
     offline: false,
     debugTokenTotal: 0,
+    migrationNotice: false,
     ...overrides
   };
   appendTelemetry(state, "event_open", { eventId: EVENT_CONFIG.id, initial: true, clockMode: state.clockMode });
@@ -101,27 +97,41 @@ function normalizeSavedState(saved) {
   return {
     ...createDefaultState(),
     ...saved,
-    version: 3,
+    version: 4,
     offline: false,
     pendingRewards: Array.isArray(saved.pendingRewards) ? saved.pendingRewards : [],
     tokenLedger: Array.isArray(saved.tokenLedger) ? saved.tokenLedger : [],
     telemetry: Array.isArray(saved.telemetry) ? saved.telemetry : [],
     claimedKeys: Array.isArray(saved.claimedKeys) ? saved.claimedKeys : [],
     claimedMilestones: Array.isArray(saved.claimedMilestones) ? saved.claimedMilestones : [],
-    inventoryHistory: Array.isArray(saved.inventoryHistory) ? saved.inventoryHistory : [],
-    referralStatuses: { ...Object.fromEntries(referralProfiles.map((profile) => [profile.id, profile.status])), ...(saved.referralStatuses || {}) }
+    inventoryHistory: Array.isArray(saved.inventoryHistory) ? saved.inventoryHistory : []
   };
 }
 
-function migrateV2State(saved) {
+function migratePreviousState(saved) {
+  const hasDemoClock = saved.clockMode === "demo" && Number.isFinite(saved.demoNowAnchor) && Number.isFinite(saved.realNowAnchor);
+  const previousNow = resolveClockNow({
+    realNow: Date.now(),
+    clockMode: hasDemoClock ? "demo" : "real",
+    demoNowAnchor: saved.demoNowAnchor,
+    realNowAnchor: saved.realNowAnchor
+  });
+  const hasClock = Number.isFinite(saved.eventStartTime)
+    && Number.isFinite(saved.eventEndTime)
+    && saved.eventEndTime - saved.eventStartTime === EVENT_CONFIG.durationDays * 86400000
+    && previousNow >= saved.eventStartTime
+    && previousNow < saved.eventEndTime;
   const migrated = createDefaultState({
     playerLevel: Number(saved.playerLevel) || 30,
     serverAgeTier: saved.serverAgeTier || "mature",
     reducedEffects: Boolean(saved.reducedEffects),
-    soundEnabled: Boolean(saved.soundEnabled)
+    soundEnabled: Boolean(saved.soundEnabled),
+    ...(hasClock ? { eventStartTime: saved.eventStartTime, eventEndTime: saved.eventEndTime } : {}),
+    ...(hasClock && hasDemoClock ? { clockMode: "demo", demoNowAnchor: saved.demoNowAnchor, realNowAnchor: saved.realNowAnchor } : {}),
+    migrationNotice: true
   });
-  appendTelemetry(migrated, "state_migrated", { fromVersion: 2, toVersion: 3, mode: "reset-event-economy" });
-  console.warn("State V2 dùng cap cũ 78/18/28 đã được reset có kiểm soát khi nâng lên proposal V3; không cộng thêm Lệnh.");
+  appendTelemetry(migrated, "state_migrated", { fromVersion: Number(saved.version) || "legacy", toVersion: 4, mode: "reset-event-economy" });
+  console.warn("Tiến độ event cũ đã được reset có kiểm soát khi nâng lên proposal Hành Trình Ngũ Nhạc; không cộng thêm Lệnh.");
   return migrated;
 }
 
@@ -134,10 +144,10 @@ class GameStore extends EventTarget {
   load() {
     try {
       const saved = JSON.parse(localStorage.getItem(EVENT_CONFIG.storageKey));
-      if (saved?.version === 3) return normalizeSavedState(saved);
+      if (saved?.version === 4) return normalizeSavedState(saved);
       const previous = JSON.parse(localStorage.getItem(EVENT_CONFIG.previousStorageKey));
-      if (previous?.version === 2) {
-        const migrated = migrateV2State(previous);
+      if (previous?.version === 3) {
+        const migrated = migratePreviousState(previous);
         localStorage.setItem(EVENT_CONFIG.storageKey, JSON.stringify(migrated));
         localStorage.removeItem(EVENT_CONFIG.previousStorageKey);
         return migrated;
@@ -205,7 +215,7 @@ class GameStore extends EventTarget {
     this.update((draft) => {
       const previous = draft.lastClockPhaseKey;
       draft.lastClockPhaseKey = phaseKey;
-      if (status.eventDay && status.eventDay <= EVENT_CONFIG.earningDays) {
+      if (status.eventDay && status.eventDay <= EVENT_CONFIG.durationDays) {
         draft.dailyProgress[status.eventDay] ||= { login: 1, activity: 0, nghiaQuan: 0, team: 0, pvp: 0 };
         draft.dailyProgress[status.eventDay].login = Math.max(1, draft.dailyProgress[status.eventDay].login || 0);
         draft.loginDays = Object.values(draft.dailyProgress).filter((day) => day.login >= 1).length;
@@ -241,12 +251,17 @@ class GameStore extends EventTarget {
   }
 
   grantTokens({ sourceType, sourceId, amount, eventDay = null, claimKey = null, transactionId = null, metadata = {} }) {
-    if (this.getEventStatus().phase === "ended") return { ok: false, reason: "event-ended" };
+    if (!this.getEventStatus().earningOpen) return { ok: false, reason: "event-unavailable" };
+    if (!TOKEN_SOURCE_TYPES.has(sourceType)) return { ok: false, reason: "unknown-source" };
+    if (!Number.isInteger(amount) || amount <= 0) return { ok: false, reason: "invalid-amount" };
+    if (sourceType === "daily" && (!Number.isInteger(eventDay) || eventDay < 1 || eventDay > EVENT_CONFIG.durationDays)) {
+      return { ok: false, reason: "invalid-event-day" };
+    }
     const key = claimKey || (sourceType === "daily" ? dailyClaimKey(sourceId, eventDay) : singleClaimKey(sourceType, sourceId));
     if (this.state.claimedKeys.includes(key)) return { ok: false, reason: "duplicate", claimKey: key };
     const summary = this.getSourceSummary();
     const sourceGroup = FREE_SOURCE_TYPES.includes(sourceType) ? "free" : sourceType;
-    const caps = { free: EVENT_CONFIG.freeTokenCap, referral: EVENT_CONFIG.referralTokenCap, recharge: EVENT_CONFIG.rechargeTokenCap };
+    const caps = { free: EVENT_CONFIG.freeTokenCap, recharge: EVENT_CONFIG.rechargeTokenCap };
     if (caps[sourceGroup] !== undefined && summary[sourceGroup] + amount > caps[sourceGroup]) {
       return { ok: false, reason: "source-cap", claimKey: key };
     }
@@ -272,32 +287,9 @@ class GameStore extends EventTarget {
       const telemetryPayload = { transactionId: txId, claimKey: key, sourceType, amount, eventDay, balanceBefore, balanceAfter: draft.movementTokens, clockMode: draft.clockMode };
       appendTelemetry(draft, "token_earned", telemetryPayload);
       appendTelemetry(draft, "token_claimed", telemetryPayload);
-      if (sourceType === "referral") appendTelemetry(draft, "referral_claimed", { transactionId: txId, sourceId, amount });
       if (sourceType === "recharge") appendTelemetry(draft, "recharge_claimed", { transactionId: txId, sourceId, amount });
     });
     return { ok: true, claimKey: key, transactionId: txId };
-  }
-
-  spendToken(actionId, eventDay) {
-    const key = `spend:${actionId}`;
-    if (this.state.claimedKeys.includes(key) || this.state.movementTokens <= 0) return false;
-    this.update((draft) => {
-      draft.claimedKeys.push(key);
-      draft.movementTokens -= 1;
-      draft.tokenLedger.push({
-        transactionId: `tx:${key}`,
-        claimKey: key,
-        sourceType: "spend",
-        sourceId: actionId,
-        eventDay,
-        amount: -1,
-        status: "claimed",
-        createdAt: nowIso(),
-        claimedAt: nowIso()
-      });
-      appendTelemetry(draft, "token_spent", { actionId, eventDay, amount: 1, balanceBefore: draft.movementTokens + 1, balanceAfter: draft.movementTokens, clockMode: draft.clockMode });
-    });
-    return true;
   }
 
   commitAction(action, nextPity) {
@@ -320,14 +312,14 @@ class GameStore extends EventTarget {
         claimedAt: nowIso()
       });
       draft.pendingAction = clone(action);
-      draft.sonTheLayers = nextPity.layers;
-      draft.sonTheReady = nextPity.ready;
+      draft.vanKhiLayers = nextPity.layers;
+      draft.vanKhiReady = nextPity.ready;
       draft.forcedRoll = null;
       appendTelemetry(draft, "token_spent", { actionId: action.actionId, eventDay: action.eventDay, amount: 1, balanceBefore, balanceAfter: draft.movementTokens, clockMode: draft.clockMode });
       appendTelemetry(draft, "movement_started", { actionId: action.actionId, eventDay: action.eventDay });
       appendTelemetry(draft, "movement_committed", { actionId: action.actionId, result: action.result, powered: action.powered });
-      if (action.powered) appendTelemetry(draft, "son_the_triggered", { actionId: action.actionId, result: action.result });
-      else if (action.result === 1 || action.result === 2) appendTelemetry(draft, "son_the_stack_added", { actionId: action.actionId, layers: nextPity.layers });
+      if (action.powered) appendTelemetry(draft, "van_khi_triggered", { actionId: action.actionId, result: action.result });
+      else if (action.result === 1 || action.result === 2) appendTelemetry(draft, "van_khi_stack_added", { actionId: action.actionId, layers: nextPity.layers });
     });
     return true;
   }
@@ -355,38 +347,10 @@ class GameStore extends EventTarget {
 
       for (let offset = 1; offset <= action.roundsCompleted; offset += 1) {
         const roundNumber = previousRounds + offset;
-        const claimKey = roundTokenClaimKey(roundNumber);
-        const granted = canGrantRoundToken({ eventDay: action.eventDay, grantedCount: draft.roundBonusGrantedCount })
-          && !draft.claimedKeys.includes(claimKey);
-        if (granted) {
-          const balanceBefore = draft.movementTokens;
-          draft.claimedKeys.push(claimKey);
-          draft.roundBonusGrantedCount += 1;
-          draft.movementTokens += 1;
-          draft.tokenLedger.push({
-            transactionId: `tx:${claimKey}`,
-            claimKey,
-            sourceType: "round-token",
-            sourceId: String(roundNumber),
-            eventDay: action.eventDay,
-            amount: 1,
-            status: "claimed",
-            createdAt: nowIso(),
-            claimedAt: nowIso(),
-            metadata: { actionId }
-          });
-          appendTelemetry(draft, "token_earned", { actionId, sourceType: "round-token", roundNumber, amount: 1, balanceBefore, balanceAfter: draft.movementTokens, eventDay: action.eventDay, clockMode: draft.clockMode });
+        appendTelemetry(draft, "round_completed", { actionId, roundNumber });
+        if ([1, 5, 14, 17, 20].includes(roundNumber)) {
+          appendTelemetry(draft, "journey_checkpoint_completed", { actionId, roundNumber });
         }
-        queued.push({
-          rewardId: `reward:${actionId}:round:${roundNumber}`,
-          actionId,
-          rewardType: "round_token",
-          payload: { roundNumber, amount: granted ? 1 : 0, granted },
-          status: "pending",
-          createdAt: nowIso(),
-          claimedAt: null
-        });
-        appendTelemetry(draft, "round_completed", { actionId, roundNumber, tokenGranted: granted });
       }
 
       const node = getNode(action.finalPosition);
@@ -417,6 +381,7 @@ class GameStore extends EventTarget {
               createdAt: nowIso(),
               claimedAt: null
             });
+            appendTelemetry(draft, "milestone_unlocked", { actionId, rounds: milestone.rounds });
           }
         });
 
@@ -459,7 +424,7 @@ class GameStore extends EventTarget {
   }
 
   claimReward(rewardId, items = [], metadata = {}) {
-    if (this.getEventStatus().phase === "ended") return false;
+    if (this.getEventStatus().phase !== "active") return false;
     const reward = this.state.pendingRewards.find((item) => item.rewardId === rewardId);
     if (!reward || reward.status !== "pending") return false;
     this.update((draft) => {
@@ -467,12 +432,13 @@ class GameStore extends EventTarget {
       if (!target || target.status !== "pending") return;
       target.status = "claimed";
       target.claimedAt = nowIso();
+      target.transactionId = `tx:${rewardId}`;
       target.metadata = { ...(target.metadata || {}), ...metadata };
       items.forEach((item) => {
         draft.inventory[item.name] = (draft.inventory[item.name] || 0) + item.quantity;
       });
       if (items.length) {
-        draft.inventoryHistory.unshift({ rewardId, actionId: target.actionId, items, at: nowIso(), rewardType: target.rewardType });
+        draft.inventoryHistory.unshift({ transactionId: target.transactionId, rewardId, actionId: target.actionId, items, at: nowIso(), rewardType: target.rewardType });
       }
       if (target.rewardType === "milestone") {
         const rounds = Number(target.payload.rounds);
@@ -537,12 +503,11 @@ class GameStore extends EventTarget {
   setDailyProgress(questId, complete) {
     const quest = dailyQuests.find((item) => item.id === questId);
     const { eventDay } = this.getEventStatus();
-    if (!quest || !eventDay || eventDay > EVENT_CONFIG.earningDays) return false;
+    if (!quest || !eventDay || eventDay > EVENT_CONFIG.durationDays) return false;
     this.update((draft) => {
       draft.dailyProgress[eventDay] ||= { login: 0, activity: 0, nghiaQuan: 0, team: 0, pvp: 0 };
       draft.dailyProgress[eventDay][quest.progressKey] = complete ? quest.target : 0;
       draft.loginDays = Object.values(draft.dailyProgress).filter((day) => day.login >= 1).length;
-      draft.nghiaQuanTotal = Object.values(draft.dailyProgress).filter((day) => day.nghiaQuan >= 1).length;
     });
     return true;
   }
@@ -550,7 +515,6 @@ class GameStore extends EventTarget {
   getSourceSummary() {
     return {
       free: sourceGroupTotal(this.state.tokenLedger, FREE_SOURCE_TYPES),
-      referral: sourceGroupTotal(this.state.tokenLedger, "referral"),
       recharge: sourceGroupTotal(this.state.tokenLedger, "recharge"),
       debug: sourceGroupTotal(this.state.tokenLedger, "debug")
     };

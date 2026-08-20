@@ -2,17 +2,16 @@ import {
   EVENT_CONFIG,
   cumulativeQuests,
   dailyQuests,
+  goldenDayRewards,
   oneTimeQuest,
-  trấnNhạcRewards
 } from "./event-config.js";
 import { dailyClaimKey, singleClaimKey } from "./game-rules.js";
+import { renderRechargePanel } from "./rewards.js";
 
-const GROUPS = ["Hằng Ngày", "Tích Lũy", "Ngày Trấn Nhạc", "Một Lần"];
+export const QUEST_GROUPS = Object.freeze(["Hằng Ngày", "Tích Lũy", "Tích Nạp", "Đặc Biệt"]);
 
 function dailyEntries(state, eventStatus) {
-  const days = eventStatus.phase === "settlement"
-    ? Object.keys(state.dailyProgress).map(Number).filter((day) => day <= EVENT_CONFIG.earningDays).sort((a, b) => a - b)
-    : eventStatus.eventDay && eventStatus.eventDay <= EVENT_CONFIG.earningDays ? [eventStatus.eventDay] : [];
+  const days = eventStatus.eventDay && eventStatus.eventDay <= EVENT_CONFIG.durationDays ? [eventStatus.eventDay] : [];
   return days.flatMap((day) => dailyQuests.map((quest) => ({
     ...quest,
     day,
@@ -32,9 +31,9 @@ function cumulativeEntries(state) {
 }
 
 function bonusEntries(state, eventStatus) {
-  return trấnNhạcRewards.map((quest) => ({
+  return goldenDayRewards.map((quest) => ({
     ...quest,
-    group: "Ngày Trấn Nhạc",
+    group: "Đặc Biệt",
     target: quest.day,
     progress: (state.dailyProgress[quest.day]?.login || 0) >= 1 ? quest.day : 0,
     claimKey: singleClaimKey(quest.sourceType, quest.id)
@@ -44,7 +43,7 @@ function bonusEntries(state, eventStatus) {
 function oneTimeEntries(state) {
   return [{
     ...oneTimeQuest,
-    group: "Một Lần",
+    group: "Đặc Biệt",
     progress: state.oneTimeComplete ? 1 : 0,
     claimKey: singleClaimKey(oneTimeQuest.sourceType, oneTimeQuest.id)
   }];
@@ -54,8 +53,8 @@ function allEntries(state, eventStatus) {
   return [
     ...dailyEntries(state, eventStatus),
     ...cumulativeEntries(state),
-    ...bonusEntries(state, eventStatus),
-    ...oneTimeEntries(state)
+    ...oneTimeEntries(state),
+    ...bonusEntries(state, eventStatus)
   ];
 }
 
@@ -109,8 +108,9 @@ function createQuestCard(entry, state, eventStatus, { compact = false, onClaim, 
   const reward = document.createElement("span");
   reward.className = "quest-reward";
   reward.textContent = `令 Ngũ Nhạc Lệnh ×${entry.amount}`;
-  const action = document.createElement("button");
-  action.type = "button";
+  const isExternalLink = status === "progress" && Boolean(entry.externalUrl);
+  const action = document.createElement(isExternalLink ? "a" : "button");
+  if (!isExternalLink) action.type = "button";
   action.className = status === "claimable" ? "jade-button compact" : "wood-button compact";
 
   const labels = { claimed: "Đã Nhận", claimable: "Nhận", progress: "Đi Đến", expired: "Hết Hạn" };
@@ -120,7 +120,15 @@ function createQuestCard(entry, state, eventStatus, { compact = false, onClaim, 
     action.setAttribute("aria-label", `Nhận ${entry.amount} Ngũ Nhạc Lệnh từ ${entry.name}`);
     action.addEventListener("click", () => onClaim(entry, action));
   } else if (status === "progress") {
-    action.addEventListener("click", () => onGo(entry));
+    if (isExternalLink) {
+      action.classList.add("quest-link-button");
+      action.href = entry.externalUrl;
+      action.target = "_blank";
+      action.rel = "noopener noreferrer";
+      action.setAttribute("aria-label", `Mở liên kết ${entry.name} trong tab mới`);
+    } else {
+      action.addEventListener("click", () => onGo(entry));
+    }
   }
   bottom.append(reward, action);
   card.append(top, description, bottom);
@@ -171,7 +179,6 @@ function createSourceSummary(store) {
   wrap.className = "source-summary";
   [
     ["Miễn phí", totals.free, EVENT_CONFIG.freeTokenCap],
-    ["Bằng hữu", totals.referral, EVENT_CONFIG.referralTokenCap],
     ["Tích nạp", totals.recharge, EVENT_CONFIG.rechargeTokenCap],
     ["DEV", totals.debug, null]
   ].forEach(([label, value, cap]) => {
@@ -191,23 +198,38 @@ export function renderQuestPanel(container, store, handlers, initialGroup = "H�
   const draw = () => {
     const state = store.get();
     const eventStatus = store.getEventStatus();
-    const entries = allEntries(state, eventStatus).filter((entry) => entry.group === activeGroup);
+    const entries = activeGroup === "Tích Nạp" ? [] : allEntries(state, eventStatus).filter((entry) => entry.group === activeGroup);
     container.replaceChildren();
     container.append(createSourceSummary(store));
 
     const tabs = document.createElement("div");
     tabs.className = "panel-tabs";
-    GROUPS.forEach((group) => {
+    tabs.setAttribute("role", "tablist");
+    tabs.setAttribute("aria-label", "Nhóm nhiệm vụ");
+    QUEST_GROUPS.forEach((group) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = group === activeGroup ? "active" : "";
       button.textContent = group;
+      button.setAttribute("role", "tab");
+      button.setAttribute("aria-selected", String(group === activeGroup));
       button.addEventListener("click", () => {
         activeGroup = group;
         draw();
       });
       tabs.append(button);
     });
+    container.append(tabs);
+
+    if (activeGroup === "Tích Nạp") {
+      const recharge = document.createElement("div");
+      recharge.className = "quest-recharge-tab";
+      recharge.setAttribute("role", "tabpanel");
+      recharge.setAttribute("aria-label", "Các mốc tích nạp");
+      container.append(recharge);
+      renderRechargePanel(recharge, store, { ...handlers, onRechargeChanged: draw });
+      return;
+    }
 
     const actions = document.createElement("div");
     actions.className = "panel-actions";
@@ -229,11 +251,13 @@ export function renderQuestPanel(container, store, handlers, initialGroup = "H�
 
     const grid = document.createElement("div");
     grid.className = "quest-grid";
+    grid.setAttribute("role", "tabpanel");
+    grid.setAttribute("aria-label", activeGroup);
     if (!entries.length) {
       const empty = document.createElement("p");
       empty.className = "empty-state";
-      empty.textContent = eventStatus.phase === "settlement"
-        ? "Ngày 10 không phát sinh nhiệm vụ mới. Hãy dùng Lệnh còn lại và nhận thưởng."
+      empty.textContent = eventStatus.phase === "ended"
+        ? "Sự kiện đã kết thúc; nhiệm vụ chỉ còn trong lịch sử."
         : "Không có nhiệm vụ trong giai đoạn này.";
       grid.append(empty);
     }
@@ -247,7 +271,7 @@ export function renderQuestPanel(container, store, handlers, initialGroup = "H�
       },
       onGo: handlers.onGo
     })));
-    container.append(tabs, actions, grid);
+    container.append(actions, grid);
   };
   draw();
 }
